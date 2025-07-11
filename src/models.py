@@ -68,26 +68,27 @@ class DeConvBlock(Conv_):
         self.act = nn.ReLU(inplace=True)
 
 
-class GAN_Generator(nn.Module):
+
+# renaming it to gang cuz it's funnier
+class GANG(nn.Module):
     def __init__(self, lat_dim, hidden_dim, depth, attention_layers=None):
         super().__init__()
         self.lat_dim = lat_dim
         self.attention_layers = attention_layers or []
 
-        self.z_size = 4
-        z_channels  = hidden_dim * (2**(depth-1))
+        self.init_size = 4
+        init_channels  = hidden_dim * (2**(depth-1))
 
-        self.projector = nn.Linear(lat_dim, z_channels * (self.init_size**2))
-
+        self.projector = nn.Linear(lat_dim, init_channels * (self.init_size**2))
 
         block_kwargs = {
             "kernel_size":4,
             "stride":2,
-            "padding":1
+            "padding":1,
         }
 
         self.layers = []
-        in_channels = z_channels
+        in_channels = init_channels
         for i in range(depth-1):
             out_channels = hidden_dim * (2** (depth - i - 1))
             self.layers.append(
@@ -101,20 +102,24 @@ class GAN_Generator(nn.Module):
         
         # last layer
         self.layers.append(
-            DeConvBlock(
+            nn.ConvTranspose2d(
                 in_channels,
                 3,
-                **block_kwargs
+                **block_kwargs,
+                bias=False
             )
         )
         self.layers = nn.Sequential(*self.layers)
 
     def forward(self, z):
         x = self.projector(z)
-        x = x.view(x.size(0), -1, self.z_size, self.z_size)
-        return self.layers(x)
+        x = x.view(x.size(0), -1, self.init_size, self.init_size)
+        x = self.layers(x)
+        return torch.tanh(x)
 
-class GAN_Descriminator(nn.Module):
+
+
+class GAND(nn.Module):
     def __init__(self, hidden_dim, depth, attention_layers=None):
         super().__init__()
         self.attention_layers = attention_layers or []
@@ -140,9 +145,14 @@ class GAN_Descriminator(nn.Module):
             in_channels = out_channels
         self.layers = nn.Sequential(*self.layers)
 
-        self.cls_head = nn.Conv2d(in_channels, 1, kernel_size=4, stride=1, padding=0)
+        self.cls_head = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Flatten(),
+            nn.Linear(in_channels, 1)
+        )
+        
 
     def forward(self, x):
         x = self.layers(x)
         x = self.cls_head(x)
-        return x.view(x.size(0), -1)
+        return x
