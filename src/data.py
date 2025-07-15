@@ -92,3 +92,24 @@ class AdaptiveDiscriminatorAugmentation:
                 aug_images.append(image)
 
             return torch.stack(aug_images)
+        
+
+
+
+def create_dataloader(root_dir, batch_size=32, image_size=256, num_workers=os.cpu_count(), pin_memory=True, augs=None):
+    dataset = CarsDataset(
+        root_dir=root_dir,
+        image_size=image_size,
+        augmentations=augs
+    )
+
+    dataloader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=True, # no test data ...
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        drop_last=True,
+    )
+
+    return dataloader
