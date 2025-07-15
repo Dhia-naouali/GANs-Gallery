@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
-
+from torch.nn.utils import spectral_norm
 
 class SelfAttention(nn.Module):
     def __init__(self, in_channels):
@@ -27,18 +27,33 @@ class SelfAttention(nn.Module):
 
 
 class Conv_(nn.Module):
+    NORMS = {
+        "batch": nn.BatchNorm2d,
+        "layer": nn.LayerNorm,
+        "instance": nn.InstanceNorm2d
+    }
+    
     def __init__(self):
         super().__init__()
-        self.conv = self.bn = self.act = None
+        self.conv = self.norm = self.act = None
 
     def forward(self, x):
         x = self.conv(x)
-        x = self.bn(x)
+        x = self.norm(x)
         return self.act(x)        
 
 
 class ConvBlock(Conv_):
-    def __init__(self, in_channels, out_channels, kernel_size=4, stride=2, padding=1):
+    def __init__(
+            self,
+            in_channels,
+            out_channels,
+            kernel_size=4,
+            stride=2,
+            padding=1,
+            norm="batch",
+            use_sn=True
+        ):
         super().__init__()
         self.conv = nn.Conv2d(
             in_channels,
@@ -48,13 +63,24 @@ class ConvBlock(Conv_):
             padding,
             bias=False
         )
-        self.bn = nn.BatchNorm2d(out_channels)
+        if use_sn:
+            self.conv = spectral_norm(self.conv)
+        self.norm = self.NORMS[norm](out_channels)
         self.act = nn.ReLU(inplace=True)
     
 
     
 class DeConvBlock(Conv_):
-    def __init__(self, in_channels, out_channels, kernel_size=4, stride=2, padding=1):
+    def __init__(
+            self,
+            in_channels,
+            out_channels,
+            kernel_size=4,
+            stride=2,
+            padding=1,
+            norm="batch",
+            use_sn=True
+        ):
         super().__init__()
         self.conv = nn.ConvTranspose2d(
             in_channels,
@@ -64,7 +90,10 @@ class DeConvBlock(Conv_):
             padding,
             bias=False
         )
-        self.bn = nn.BatchNorm2d(out_channels)
+        
+        if use_sn:
+            self.conv = spectral_norm(self.conv)
+        self.norm = self.NORMS[norm](out_channels)
         self.act = nn.ReLU(inplace=True)
 
 
