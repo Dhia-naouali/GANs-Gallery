@@ -1,6 +1,6 @@
 # Cars Generator
 
-(polishing & uploading old project)
+(polishing & uploading old project + learning a bunch of new things about GANs)
 
 cars come in multiple colors, shapes and attitutes
 we have white, black (zoomies included) and god forbid oranges
