@@ -4,6 +4,7 @@ import random
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
+from torchvision.utils import save_image
 
 class CarsDataset(Dataset):
     def __init__(self, root_dir, image_size=256, augmentations=None):
@@ -113,3 +114,8 @@ def create_dataloader(root_dir, batch_size=32, image_size=256, num_workers=os.cp
     )
 
     return dataloader
+
+
+def save_smaples(images, path, rows):
+    images = (images + 1) / 2
+    save_image(images, path, rows)
