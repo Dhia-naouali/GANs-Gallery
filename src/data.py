@@ -1,7 +1,9 @@
 import os
 import cv2
+import random
+import torch
 from torch.utils.data import Dataset, DataLoader
-
+from torchvision import transforms
 
 class CarsDataset(Dataset):
     def __init__(self, root_dir, image_size=256, augmentations=None):
@@ -48,3 +50,45 @@ class CarsDataset(Dataset):
 
         image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
         return self.transforms(image)
+
+
+
+class AdaptiveDiscriminatorAugmentation:
+    def __init__(self, target_acc=.6, adjustment_speed=1e-3, max_prob=.8):
+        self.target_acc = target_acc
+        self.p_step = adjustment_speed
+        self.max_prob = max_prob
+        self.p = 0
+        self.real_acc_ema = 0.5
+
+        self.transforms = transforms.Compose([
+            transforms.RandomHorizontalFlip(.5),
+            transforms.RandomVerticalFlip(.1),
+            transforms.RandomRotatoin(10),
+            transforms.ColorJitter(brightness=.2, contrast=.2, saturation=.2, hue=.1),
+            transforms.RandomAffine(degrees=0, translate=(.1, .1), scale=(.9, 1.1)),
+            transforms.ToTensor(),
+            transforms.Normalize(.5, .5)
+
+        ])
+
+        def update(self, real_acc):
+            self.real_acc_ema = .99 * self._real_acc_ema + .01 * real_acc
+
+            if self.real_acc_ema > self.target_acc:
+                self.p = min(self.current_prob + self.p_step, self.max_prob)
+            else:
+                self.p = max(self.p - self.p_step, 0)
+
+        def __call__(self, images):
+            if self.p == 0:
+                return images
+            
+            aug_images = []
+            for image in images:
+                if random.random() < self.p:
+                    image = transforms.ToPILImage(image.cpu())
+                    image = self.transforms(image)
+                aug_images.append(image)
+
+            return torch.stack(aug_images)
