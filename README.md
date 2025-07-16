@@ -8,6 +8,5 @@ some combinations include cows, tuxedos and
 the sure thing is they make our FYPs much more intertaining
 the aim of this project is to create more of'em 
 
-
-Training GANs with limited Data (ADA): [paper](https://arxiv.org/pdf/2006.06676)  
-note to self: start documenting and sharing papers
+note to self: start documenting and sharing papers  
+Done, notion notes linked
