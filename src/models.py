@@ -33,9 +33,13 @@ class Conv_(nn.Module):
         "instance": nn.InstanceNorm2d
     }
     
-    def __init__(self):
+    def __init__(self, out_channels, norm, use_SN):
         super().__init__()
-        self.conv = self.norm = self.act = None
+        if use_SN:
+            self.conv = spectral_norm(self.conv)
+
+        self.norm = self.NORMS[norm](out_channels)
+        self.act = nn.ReLU(inplace=True)
 
     def forward(self, x):
         x = self.conv(x)
@@ -52,7 +56,7 @@ class ConvBlock(Conv_):
             stride=2,
             padding=1,
             norm="batch",
-            use_sn=True
+            use_SN=True
         ):
         super().__init__()
         self.conv = nn.Conv2d(
@@ -63,10 +67,7 @@ class ConvBlock(Conv_):
             padding,
             bias=False
         )
-        if use_sn:
-            self.conv = spectral_norm(self.conv)
-        self.norm = self.NORMS[norm](out_channels)
-        self.act = nn.ReLU(inplace=True)
+        super().__init__(out_channels, norm, use_SN)
     
 
     
@@ -79,7 +80,7 @@ class DeConvBlock(Conv_):
             stride=2,
             padding=1,
             norm="batch",
-            use_sn=True
+            use_SN=True
         ):
         super().__init__()
         self.conv = nn.ConvTranspose2d(
@@ -90,11 +91,8 @@ class DeConvBlock(Conv_):
             padding,
             bias=False
         )
-        
-        if use_sn:
-            self.conv = spectral_norm(self.conv)
-        self.norm = self.NORMS[norm](out_channels)
-        self.act = nn.ReLU(inplace=True)
+
+        super().__init__(out_channels, norm, use_SN)
 
 
 
