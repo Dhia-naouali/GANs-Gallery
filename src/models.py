@@ -98,7 +98,7 @@ class DeConvBlock(Conv_):
 
 # renaming it to gang cuz it's funnier
 class GANG(nn.Module):
-    def __init__(self, lat_dim, hidden_dim, depth, attention_layers=None):
+    def __init__(self, lat_dim, hidden_dim, depth, attention_layers=None, norm="batch", use_SN=True):
         super().__init__()
         self.lat_dim = lat_dim
         self.attention_layers = attention_layers or []
@@ -112,6 +112,8 @@ class GANG(nn.Module):
             "kernel_size":4,
             "stride":2,
             "padding":1,
+            "norm": norm,
+            "use_SN": use_SN
         }
 
         self.layers = []
@@ -147,7 +149,7 @@ class GANG(nn.Module):
 
 
 class GAND(nn.Module):
-    def __init__(self, hidden_dim, depth, attention_layers=None):
+    def __init__(self, hidden_dim, depth, attention_layers=None, norm="batch", use_SN=True):
         super().__init__()
         self.attention_layers = attention_layers or []
 
@@ -155,7 +157,9 @@ class GAND(nn.Module):
         block_kwargs = {
                     "kernel_size":4,
                     "stride":2,
-                    "padding":1
+                    "padding":1,
+                    "norm": norm,
+                    "use_SN": use_SN
                 }
 
 
@@ -183,3 +187,32 @@ class GAND(nn.Module):
         x = self.layers(x)
         x = self.cls_head(x)
         return x
+
+def init_models(config):
+    lat_dim = config.get("lat_dim", 128)
+    spectral_norm = config.get("pectral_norm", True)
+    norm = config.get("norm", "batch")
+    self_attention = config.get("self_attention", False)
+    
+    
+    G_config = config.get("Generator", {})   
+    generator = GANG(
+        lat_dim=lat_dim,
+        hidden_dim=G_config.get("hidden_dim", 128),
+        depth=G_config.get("depth", 4),
+        norm=norm,
+        use_SA=self_attention,
+        use_SN=spectral_norm,
+    )
+
+
+    D_config = config.get("Discriminator", {})
+    descriminator = GAND(
+        hidden_dim=D_config.get("hidden_dim", 128)
+        depth=D_config.get("depth", 4),
+        norm=norm,
+        use_SA=self_attention,
+        use_SN=spectral_onrm
+    )
+
+    return generator, descriminator
