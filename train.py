@@ -10,30 +10,23 @@ from src.utils import (
     init_directories,
     count_params,
     Scheduler,
-
+    CheckpointManager,
 )
 from src.models import init_models
-from src.data import create_dataloader
+from src.data import create_dataloader, AdaptiveDiscriminatorAugmentation
 
 
 
 class Trainer:
     def __init__(self, config):
-        # seed
         # init directories: samples, chekcpoints, ...
-        # init models
-        # print param counts
-        # setup optimizers
-        # setup loss
-        # setup loader
-        # ADA ?
+        # scheduler
+        # regulizers
         # scalers
         # checkpoint manager
         # compile ?
         # metrics
         # fixed noise sample
-
-
 
         self.config = config
         self.device = torch.device(config.device if torch.cuda.is_available else "cpu") # someone's CPU goin down 💀
@@ -56,8 +49,23 @@ class Trainer:
             root_dir=config.data.root_dir
         )
 
+        if config.data.use_ADA:
+            self.ada = AdaptiveDiscriminatorAugmentation(
+                target_acc=config.data.ada_target_acc
+            )
+        else:
+            self.ada = None
+
+
         self.G_scaler = GradScaler()
         self.D_scaler = GradScaler()
+
+        self.checkpoint_manager = CheckPointManager(
+            ...
+        )
+
+
+        self.NOISE = torch.randn(32, self.lat_dim, device=self.device)
 
         
 
@@ -82,10 +90,65 @@ class Trainer:
             weight_decay=config.weight_decay,
         )
 
-
         self.G_scheduler = Scheduler(self.G_optimizer, config)
         self.D_scheduler = Scheduler(self.D_optimzier, config)
 
 
     def setup_loss(self):
-        ...
+        self.criterion = init_criterion(
+            self.config.loss,
+            device=self.device,
+        )
+
+        self.regs = {}
+
+
+
+    def step(self, real_images):
+        bs = real_images.size(0)
+
+        if self.ada:
+            real_images = self.ada(real_images)
+        
+        noise = torch.randn(bs, self.config.model.lat_dim, device=self.device)
+
+        # D step
+        self.D.zero_grad()
+        with autocast(device_type=self.device):
+            real_images.requires_grad_(True)
+            real_logits = self.D(real_images)
+
+            with torch.no_grad()
+                fake_images = self.G(noise).detach()
+            fake_logits = self.D(fake_images)
+
+            D_loss = self.criterion.discriminator_loss(real_logits, fake_logits)
+        
+        self.D_scaler.scale(D_loss).backward()
+        self.D_scaler.step(self.D_optimizer)
+        self.D_scaler.update()
+
+        with torch.no_grad():
+            real_acc = (torch.tanh(real_logits) > 0).float().mean().item()
+            fake_acc = (torch.tanh(fake_logits) < 0).float().mean().item()
+
+        # G step
+        self.G.zero_grad()
+        with autocast(device_type=self.device):
+            fake_images = self.G(noise)
+            fake_logits = self.D(fake_images)
+
+            G_loss = self.criterion.generator_loss(fake_logits)
+        self.G_scaler.scale(G_loss).backward()
+        self.G_scaler.step(self.G_optimizer)
+        self.G_scaler.update()
+
+        if self.ada:
+            self.ada.update(real_acc)
+
+        return {
+            "G_loss": G_loss,
+            "D_loss": D_loss,
+            "real_acc": real_acc,
+            "fake_acc": fake_acc,
+        }
