@@ -1,0 +1,7 @@
+name: afhq
+root_dir: ./data/afhq
+image_size: 256
+augmentations:
+  horizontal_flip: true
+  rotation: 0
+  color_jitter: 0
