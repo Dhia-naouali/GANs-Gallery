@@ -15,7 +15,7 @@ class CarsDataset(Dataset):
             os.path.join(self.root_dir, f)                 
             for f in os.listdir(self.root_dir)
             ]
-        
+
         self.transforms = self._init_transforms(augmentations or {})
 
     def _init_transforms(self, augs):
@@ -115,7 +115,7 @@ def create_dataloader(root_dir, batch_size=32, image_size=256, num_workers=os.cp
 
     return dataloader
 
-
-def save_smaples(images, path, rows):
+# images to track ADA
+def save_smaples(images, path, rows=4):
     images = (images + 1) / 2
     save_image(images, path, rows)
