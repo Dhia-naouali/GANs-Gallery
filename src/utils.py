@@ -1,8 +1,8 @@
 import random
 import numpy as np
 import torch
-
-
+import wandb # I should get a wandb sticker
+from torchvision.utils import save_image
 
 def seed_all(seed=12):
     random.seed(seed)
@@ -22,3 +22,19 @@ def count_params(model, trainable_only=False):
 
 def log_to_wandb():
     ...
+
+
+@torch.no_grad
+def generate_sample_images(
+        generator, # EMA primarily
+        num_samples=16,
+        lat_dim=None, # yet to be selected
+        path=".",
+        rows=4,
+    ):
+    generator.eval()
+    device = next(generator.parameters()).device
+    
+    noise = torch.randn(num_samples, lat_dim, device=device)
+    fake_images = .5 * (generator(noise) + 1)
+    save_image(fake_images, path, nrow=rows)
