@@ -1,0 +1,7 @@
+project: "GANs"
+notes: "first run"
+
+log_freq: 100
+log_samples: true
+log_grads: false
+log_params: false
