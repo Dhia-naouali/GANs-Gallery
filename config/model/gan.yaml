@@ -1,0 +1,14 @@
+name: gan
+lat_dim: 128
+spectral_norm: true
+self_attention: false
+
+generator:
+  hidden_dim: 128
+  depth: 4
+  norm: batch
+
+discriminator: 
+  hidden_eim: 128
+  depth: 4
+  norm: batch
