@@ -1,0 +1,31 @@
+defaults:
+  - model: GAN
+  - data: afhq
+  - optimizer: adam
+  - wandb: default
+  - _self_
+
+
+training:
+  epochs: 160
+  batch_size: 32
+  image_size: 256
+  compile: true
+  save_every: 10
+  sample_every: 10
+  eval_every: 10
+
+loss: bce
+
+seed: 12
+device: cuda
+pin_memory: true
+
+augmentations:
+  use_ADA: false
+  ada_target_acc: 0.6
+  horizontal_flip: true
+
+log_dir: ./logs
+ckeckpoints_dir: ./checkpoints
+sample_dir: ./samples
