@@ -31,7 +31,7 @@ class Trainer:
 
 
         self.config = config
-        self.device = torch.device(config.device if torch.cuda.is_available else "cpu") # someone's CPU goin down 💀
+        self.device = torch.device(config.device if torch.cuda.is_available() else "cpu") # someone's CPU goin down 💀
         seed_all()
 
         init_directories()
@@ -48,7 +48,7 @@ class Trainer:
         self.setup_loss()
 
         self.dataloader = create_dataloader(
-            root_dir=config.data.root_dir
+            config...
         )
 
         if config.data.use_ADA:
@@ -116,6 +116,23 @@ class Trainer:
         noise = torch.randn(bs, self.config.model.lat_dim, device=self.device)
 
         # D step
+        D_loss, real_acc, fake_acc = self.D_step(real_images, noise)
+
+        # G step
+        G_loss = self.G_step(noise)
+
+        if self.ada:
+            self.ada.update(real_acc)
+
+        return {
+            "G_loss": G_loss,
+            "D_loss": D_loss,
+            "real_acc": real_acc,
+            "fake_acc": fake_acc,
+        }
+
+
+    def D_spep(self, real_images, noise):
         self.D.zero_grad()
         with autocast(device_type=self.device):
             real_images.requires_grad_(True)
@@ -132,11 +149,17 @@ class Trainer:
         self.D_scaler.update()
 
         with torch.no_grad():
-            real_acc = (torch.tanh(real_logits) > 0).float().mean().item()
             fake_acc = (torch.tanh(fake_logits) < 0).float().mean().item()
+            real_acc = (torch.tanh(real_logits) > 0).float().mean().item()
 
-        # G step
+        return D_loss, fake_acc, real_acc
+
+
+
+
+    def G_step(self, noise):
         self.G.zero_grad()
+
         with autocast(device_type=self.device):
             fake_images = self.G(noise)
             fake_logits = self.D(fake_images)
@@ -145,16 +168,9 @@ class Trainer:
         self.G_scaler.scale(G_loss).backward()
         self.G_scaler.step(self.G_optimizer)
         self.G_scaler.update()
+        
+        return G_loss
 
-        if self.ada:
-            self.ada.update(real_acc)
-
-        return {
-            "G_loss": G_loss,
-            "D_loss": D_loss,
-            "real_acc": real_acc,
-            "fake_acc": fake_acc,
-        }
 
 
     def train_epoch(self, epoch, epochs):
