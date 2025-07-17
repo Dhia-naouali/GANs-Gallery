@@ -4,6 +4,8 @@ from torch.cuda.amp import GradScaler, autocast
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
+from tqdm import tqdm
+import wandb
 
 from src.utils import (
     seed_all,
@@ -26,7 +28,7 @@ class Trainer:
         # checkpoint manager
         # compile ?
         # metrics
-        # fixed noise sample
+
 
         self.config = config
         self.device = torch.device(config.device if torch.cuda.is_available else "cpu") # someone's CPU goin down 💀
@@ -105,6 +107,7 @@ class Trainer:
 
 
     def step(self, real_images):
+        # called from train_epoch: G & D in train mode 
         bs = real_images.size(0)
 
         if self.ada:
@@ -152,3 +155,37 @@ class Trainer:
             "real_acc": real_acc,
             "fake_acc": fake_acc,
         }
+
+
+    def train_epoch(self, epoch, epochs):
+        self.G.train()
+        self.D.train()
+
+        pbar = tqdm(self.dataloader, desc=f"[Epoch {epoch}/{epochs}]: ")
+
+        for batch_idx, real_imgeaes in enumerate(pbar):
+            real_images = real_images.to(self.device)
+            step_metrics = self.step(real_images)
+
+            pbar.set_postfix({
+                "G_loss": f"{self.metrics['']:.4f}",
+                "D_loss": f"{self.metrics['']:.4f}",
+                "real_acc": f"{self.metrics['']:.4f}",
+                "fake_acc": f"{self.metrics['']:.4f}",
+            })
+
+            if wandb.run is not None and not batch_idx % self.config.wandb.log_freq:
+                wandb.log({
+                    "train/G_loss": step_metrics["G_loss"],
+                    "train/D_loss": step_metrics["D_loss"],
+                    "train/real_acc": step_metrics["real_acc"],
+                    "train/fake_acc": step_metrics["fake_acc"],
+                })
+
+        return {
+
+        }
+    
+
+    def generate_samples(self, epoch):
+        ...
