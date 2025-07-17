@@ -120,7 +120,18 @@ class DeConvBlock(_Conv):
 
 # renaming it to gang cuz it's funnier
 class GANG(nn.Module):
-    def __init__(self, lat_dim, hidden_dim, depth, attention_layers=None, norm="batch", activation="elu", leak=.1, use_SN=True):
+    def __init__(
+            self,
+            lat_dim, 
+            hidden_dim, 
+            depth, 
+            attention_layers=None, 
+            norm="batch", 
+            activation="elu", 
+            leak=.1, 
+            use_SA=False,
+            use_SN=True,
+        ):
         super().__init__()
         self.lat_dim = lat_dim
         self.attention_layers = attention_layers or []
@@ -151,6 +162,8 @@ class GANG(nn.Module):
                     **block_kwargs
                 )
             )
+            if use_SA and i in self.attention_layers:
+                self.layers.append(SelfAttention(out_channels))
             in_channels = out_channels
         
         # last layer
@@ -177,7 +190,17 @@ class GANG(nn.Module):
 
 
 class GAND(nn.Module):
-    def __init__(self, hidden_dim, depth, attention_layers=None, norm="batch", activation="elu", leak=.1, use_SN=True):
+    def __init__(
+            self,
+            hidden_dim,
+            depth,
+            attention_layers=None,
+            norm="batch",
+            activation="elu",
+            leak=.1,
+            use_SN=True,
+            use_SA=False
+        ):
         super().__init__()
         self.attention_layers = attention_layers or []
 
@@ -202,11 +225,23 @@ class GAND(nn.Module):
                     in_channels, out_channels, **block_kwargs
                 )
             )
+            if use_SA and i in self.attention_layers:
+                self.layers.append(SelfAttention(out_channels))
 
             in_channels = out_channels
         self.layers = nn.Sequential(*self.layers)
 
-        self.cls_head = nn.Sequential(
+
+        # self.cls_head = nn.Conv2d(
+        #     in_channels,
+        #     out_channels,
+        #     kernel_size=4,
+        #     stdie=1,
+        #     padding=0,
+        # )
+
+
+        self.cls_head = nn.Conv2d(
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
             nn.Linear(in_channels, 1)
