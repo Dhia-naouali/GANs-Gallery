@@ -68,7 +68,7 @@ class Trainer:
         # )
 
 
-        self.NOISE = torch.randn(32, self.lat_dim, device=self.device)
+        self.NOISE = torch.randn(32, self.config.model.lat_dim, device=self.device)
 
         
 
@@ -159,9 +159,6 @@ class Trainer:
             real_acc = (torch.tanh(real_logits) > 0).float().mean().item()
 
         return D_loss, fake_acc, real_acc
-
-
-
 
     def G_train_step(self, noise):
         self.G.zero_grad()
