@@ -1,7 +1,7 @@
 defaults:
-  - model: GAN
+  - model: gan
   - data: afhq
-  - optimizer: adam
+  - optimizer: adamw
   - wandb: default
   - _self_
 
@@ -14,6 +14,8 @@ training:
   save_every: 10
   sample_every: 10
   eval_every: 10
+  beta1: 0.5
+  beta2: 0.9
 
 loss: bce
 

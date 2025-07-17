@@ -49,4 +49,13 @@ def setup_directories(config):
         config.get("checkpoint_dir", "checkpoints"),
         config.get("samples_dir", "samples"),
     ]:
-        os.makedirs(dir, exists_ok=True)
+        os.makedirs(dir, exist_ok=True)
+
+
+class Scheduler:
+    def __init__(self, *args):
+        ...
+
+class CheckpointManager:
+    def __init__(self, *args):
+        ...

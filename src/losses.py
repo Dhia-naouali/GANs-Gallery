@@ -130,3 +130,12 @@ class R1R2Regularizer:
             grads.size(0), -1
             ).norm(2, dim=1).pow(2).mean()
     
+
+
+class PathLengthREgularizer:
+    def __init__(self, lambda_path_len=2, path_len_decay=1e-2):
+        self.lambda_ = lambda_path_len
+        self.decay_ = path_len_decay
+        self.mean_ = torch.ones(1)
+
+    def __call__(self, fake_images, lat_):

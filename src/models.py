@@ -40,10 +40,11 @@ class _Conv(nn.Module):
         "instance": nn.InstanceNorm2d
     }
     
-    def __init__(self, out_channels, norm, activation, leak, use_SN):
+    def __init__(self, conv, out_channels, norm, activation, leak, use_SN):
         super().__init__()
         if use_SN:
-            self.conv = spectral_norm(self.conv)
+            conv = spectral_norm(conv)
+        self.conv = conv
 
         self.norm = self.NORMS[norm](out_channels)
         match activation:
@@ -56,7 +57,7 @@ class _Conv(nn.Module):
             case "swich":
                 self.activation = nn.SiLU(inplace=True)
             case _:
-                raise Exception(f"invalid activation function config {activation}")
+                raise Exception(f"invalid activation function config [{activation}]")
             
 
     def forward(self, x):
@@ -78,8 +79,7 @@ class ConvBlock(_Conv):
             leak=.1,
             use_SN=True
         ):
-        super().__init__()
-        self.conv = nn.Conv2d(
+        conv = nn.Conv2d(
             in_channels,
             out_channels,
             kernel_size,
@@ -87,7 +87,7 @@ class ConvBlock(_Conv):
             padding,
             bias=False
         )
-        super().__init__(out_channels, norm, activation, leak, use_SN)
+        super().__init__(conv, out_channels, norm, activation, leak, use_SN)
     
 
     
@@ -104,8 +104,7 @@ class DeConvBlock(_Conv):
             leak=.1,
             use_SN=True
         ):
-        super().__init__()
-        self.conv = nn.ConvTranspose2d(
+        conv = nn.ConvTranspose2d(
             in_channels,
             out_channels,
             kernel_size,
@@ -114,7 +113,7 @@ class DeConvBlock(_Conv):
             bias=False
         )
 
-        super().__init__(out_channels, norm, activation, leak, use_SN)
+        super().__init__(conv, out_channels, norm, activation, leak, use_SN)
         
 
 
@@ -241,7 +240,7 @@ class GAND(nn.Module):
         # )
 
 
-        self.cls_head = nn.Conv2d(
+        self.cls_head = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
             nn.Linear(in_channels, 1)
@@ -255,10 +254,11 @@ class GAND(nn.Module):
 
 def setup_models(config):
     lat_dim = config.get("lat_dim", 128)
-    spectral_norm = config.get("pectral_norm", True)
     norm = config.get("norm", "batch")
+    spectral_norm = config.get("spectral_norm", False)
     self_attention = config.get("self_attention", False)
-    
+    activation = config.get("activation", "elu")
+    leak = config.get("leak", .1)
     
     G_config = config.get("Generator", {})   
     generator = GANG(
@@ -266,18 +266,24 @@ def setup_models(config):
         hidden_dim=G_config.get("hidden_dim", 128),
         depth=G_config.get("depth", 4),
         norm=norm,
+        activation=activation,
+        leak=leak,
         use_SA=self_attention,
         use_SN=spectral_norm,
+        attention_layers=None
     )
 
 
     D_config = config.get("Discriminator", {})
     descriminator = GAND(
-        hidden_dim=D_config.get("hidden_dim", 128)
+        hidden_dim=D_config.get("hidden_dim", 128),
         depth=D_config.get("depth", 4),
         norm=norm,
+        activation=activation,
+        leak=leak,
         use_SA=self_attention,
-        use_SN=spectral_onrm
+        use_SN=spectral_norm,
+        attention_layers=None
     )
 
     return generator, descriminator

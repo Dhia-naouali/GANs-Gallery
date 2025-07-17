@@ -10,14 +10,14 @@ from omegaconf import DictConfig, OmegaConf
 
 from src.utils import (
     seed_all,
-    init_directories,
+    setup_directories,
     count_params,
     Scheduler,
     CheckpointManager,
 )
 from src.models import setup_models
 from src.data import setup_dataloader, AdaptiveDiscriminatorAugmentation
-
+from src.losses import init_criterion
 
 
 class Trainer:
@@ -35,7 +35,7 @@ class Trainer:
         self.device = torch.device(config.device if torch.cuda.is_available() else "cpu") # someone's CPU goin down 💀
         seed_all()
 
-        init_directories()
+        setup_directories(self.config)
 
         self.G, self.D = setup_models(config.model)
         self.G.to(self.device); self.D.to(self.device)
@@ -82,19 +82,25 @@ class Trainer:
         self.G_optimizer = optim.AdamW(
             self.G.parameters(),
             lr=G_lr,
-            betas=(),
+            betas=(
+                self.config.training.beta1,
+                self.config.training.beta2
+                ),
             weight_decay=config.weight_decay,
         )
 
         self.D_optimizer = optim.AdamW(
             self.D.parameters(),
             lr=D_lr,
-            betas=(),
+            betas=(
+                self.config.training.beta1,
+                self.config.training.beta2
+                ),
             weight_decay=config.weight_decay,
         )
 
         self.G_scheduler = Scheduler(self.G_optimizer, config)
-        self.D_scheduler = Scheduler(self.D_optimzier, config)
+        self.D_scheduler = Scheduler(self.D_optimizer, config)
 
 
     def setup_loss(self):

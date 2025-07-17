@@ -1,12 +1,14 @@
-name: gan
 lat_dim: 128
 norm: batch
 spectral_norm: true
 self_attention: false
+activation: elu
+leak: 0.1
 
 generator:
   hidden_dim: 128
   depth: 4
+  attention_layers: 
 
 discriminator: 
   hidden_eim: 128
