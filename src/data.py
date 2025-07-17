@@ -41,7 +41,7 @@ class CarsDataset(Dataset):
             transforms.Normalize(.5, .5)
         ])
 
-        return transforms.Compose(transforms)
+        return transforms.Compose(transform)
     
     def __len__(self):
         return len(self.image_paths)
