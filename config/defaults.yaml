@@ -27,5 +27,5 @@ augmentations:
   horizontal_flip: true
 
 log_dir: ./logs
-ckeckpoints_dir: ./checkpoints
+ckeckpoint_dir: ./checkpoints
 sample_dir: ./samples
