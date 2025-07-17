@@ -1,5 +1,6 @@
 root_dir: ./data/afhq/cat
 image_size: 256
+use_ADA: true
 augmentations:
   horizontal_flip: true
   rotation: 0

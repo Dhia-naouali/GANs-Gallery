@@ -63,9 +63,9 @@ class Trainer:
         self.G_scaler = GradScaler()
         self.D_scaler = GradScaler()
 
-        self.checkpoint_manager = CheckPointManager(
-            ...
-        )
+        # self.checkpoint_manager = CheckPointManager(
+        #     ...
+        # )
 
 
         self.NOISE = torch.randn(32, self.lat_dim, device=self.device)
@@ -112,7 +112,7 @@ class Trainer:
 
 
 
-    def step(self, real_images):
+    def train_step(self, real_images):
         # called from train_epoch: G & D in train mode 
         bs = real_images.size(0)
 
@@ -122,10 +122,10 @@ class Trainer:
         noise = torch.randn(bs, self.config.model.lat_dim, device=self.device)
 
         # D step
-        D_loss, real_acc, fake_acc = self.D_step(real_images, noise)
+        D_loss, real_acc, fake_acc = self.D_train_step(real_images, noise)
 
         # G step
-        G_loss = self.G_step(noise)
+        G_loss = self.G_train_step(noise)
 
         if self.ada:
             self.ada.update(real_acc)
@@ -138,7 +138,7 @@ class Trainer:
         }
 
 
-    def D_step(self, real_images, noise):
+    def D_train_step(self, real_images, noise):
         self.D.zero_grad()
         with autocast(device_type=self.device):
             real_images.requires_grad_(True)
@@ -163,7 +163,7 @@ class Trainer:
 
 
 
-    def G_step(self, noise):
+    def G_train_step(self, noise):
         self.G.zero_grad()
 
         with autocast(device_type=self.device):
@@ -185,23 +185,18 @@ class Trainer:
 
         pbar = tqdm(self.dataloader, desc=f"[Epoch {epoch}/{epochs}]: ")
 
-        for batch_idx, real_imgeaes in enumerate(pbar):
+        for batch_idx, real_images in enumerate(pbar):
             real_images = real_images.to(self.device)
             step_metrics = self.step(real_images)
 
             pbar.set_postfix({
-                "G_loss": f"{self.metrics['']:.4f}",
-                "D_loss": f"{self.metrics['']:.4f}",
-                "real_acc": f"{self.metrics['']:.4f}",
-                "fake_acc": f"{self.metrics['']:.4f}",
+                k: f"{step_metrics[k]:.4f}" 
+                for k in ["G_loss", "D_loss", "fake_acc", "real_acc"]
             })
 
             if wandb.run is not None and not batch_idx % self.config.wandb.log_freq:
                 wandb.log({
-                    "train/G_loss": step_metrics["G_loss"],
-                    "train/D_loss": step_metrics["D_loss"],
-                    "train/real_acc": step_metrics["real_acc"],
-                    "train/fake_acc": step_metrics["fake_acc"],
+                    f"train/{k}": step_metrics[k] for k in ["G_loss", "D_loss", "fake_acc", "real_acc"]
                 })
 
         return {
@@ -225,15 +220,15 @@ class Trainer:
             if not epoch % self.config.training.save_every:
                 self.checkpoint_manager.save_checkpoint()
 
-            if wandb.run:
-                wandb.log({
-                    "epoch/G_loss": epoch_metrics["G_loss"],
-                    "epoch/D_loss": epoch_metrics["D_loss"],
-                    "epoch/real_acc": epoch_metrics["real_acc"],
-                    "epoch/fake_acc": epoch_metrics["fake_acc"],
-                    "epoch/time": time.time() - start_time,
-                    "dpoch": epoch,
-                })
+            # if wandb.run:
+            #     wandb.log({
+            #         "epoch/G_loss": epoch_metrics["G_loss"],
+            #         "epoch/D_loss": epoch_metrics["D_loss"],
+            #         "epoch/real_acc": epoch_metrics["real_acc"],
+            #         "epoch/fake_acc": epoch_metrics["fake_acc"],
+            #         "epoch/time": time.time() - start_time,
+            #         "dpoch": epoch,
+            #     })
 
             
 
