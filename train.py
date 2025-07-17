@@ -241,3 +241,15 @@ class Trainer:
 
     def generate_samples(self, epoch):
         ...
+
+
+
+@hydra.main(config_path="config", config_name="defaults.yaml", version_base=None)
+def main(config):
+    print(OmegaConf.to_yaml(config))
+    print("\n"*8)
+    Trainer(config).train()
+
+
+if __name__ == "__main__":
+    main()
