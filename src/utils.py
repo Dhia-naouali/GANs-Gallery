@@ -1,3 +1,4 @@
+import os
 import random
 import numpy as np
 import torch
@@ -38,3 +39,14 @@ def generate_sample_images(
     noise = torch.randn(num_samples, lat_dim, device=device)
     fake_images = .5 * (generator(noise) + 1)
     save_image(fake_images, path, nrow=rows)
+
+
+
+
+def setup_directories(config):
+    for dir in [
+        config.get("log_dir", "logs"),
+        config.get("checkpoint_dir", "checkpoints"),
+        config.get("samples_dir", "samples"),
+    ]:
+        os.makedirs(dir, exists_ok=True)
