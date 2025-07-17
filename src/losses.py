@@ -93,3 +93,31 @@ class RelavisticAverageGANLoss:
         return real_loss + fake_loss
     
 
+
+class R1R2Regularizer:
+    def __init__(self, lambda_r1=10):
+        self.lambda_ = lambda_r1
+
+    def __call__(self, fake_logits, real_logits, fake_samples, real_samples):
+        fake_samples.require_grad_(True)
+        real_samples.require_grad_(True)
+
+        return self.lambda_ * (
+            .5 * self.r_gp(fake_logits, fake_samples) +
+            .5 * self.r_gp(real_logits, real_samples)
+        )
+
+
+    def r_gp(self, logits, samples):
+        grads = autograd.grad(
+            outputs=logits,
+            inputs=samples,
+            create_graph=True,
+            retain_graph=True,
+            only_inputs=True,
+        )[0]
+
+        return grads.view(
+            grads.size(0), -1
+            ).norm(2, dim=1).pow(2).mean()
+    
