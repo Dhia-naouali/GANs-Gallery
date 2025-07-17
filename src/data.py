@@ -16,7 +16,7 @@ class CarsDataset(Dataset):
             for f in os.listdir(self.root_dir)
         ]
 
-        self.transforms = self._init_transforms(augmentations or {})
+        self.transform = self._init_transforms(augmentations or {})
 
     def _init_transforms(self, augs):
         transform = [transforms.Resize((self.image_size, self.image_size))]
