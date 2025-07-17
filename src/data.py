@@ -30,7 +30,7 @@ class CarsDataset(Dataset):
 
         if augs.get("color_jitter", 0):
             p = augs["color_jitter"]
-            transform.ColorJitter(
+            transforms.ColorJitter(
                 brightness=p,
                 saturation=p,
                 hue=p//2
