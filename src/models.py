@@ -26,39 +26,39 @@ class SelfAttention(nn.Module):
         return self.alpha * out + x
 
 
-class Conv_(nn.Module):
+class _Conv(nn.Module):
     NORMS = {
         "batch": nn.BatchNorm2d,
         "layer": nn.LayerNorm,
         "instance": nn.InstanceNorm2d
     }
     
-    def __init__(self, out_channels, norm, act, leak, use_SN):
+    def __init__(self, out_channels, norm, activation, leak, use_SN):
         super().__init__()
         if use_SN:
             self.conv = spectral_norm(self.conv)
 
         self.norm = self.NORMS[norm](out_channels)
-        match act:
+        match activation:
             case "relu":
-                self.act = nn.ReLU(inplace=True)
+                self.activation = nn.ReLU(inplace=True)
             case "leaky_relu":
-                self.act = nn.LeakyReLU(leak, inlace=True)
+                self.activation = nn.LeakyReLU(leak, inlace=True)
             case "elu":
-                self.act = nn.ELU(inplace=True)
+                self.activation = nn.ELU(inplace=True)
             case "swich":
-                self.act = nn.SiLU(inplace=True)
+                self.activation = nn.SiLU(inplace=True)
             case _:
-                raise Exception(f"invalid activation function config {act}")
+                raise Exception(f"invalid activation function config {activation}")
             
 
     def forward(self, x):
         x = self.conv(x)
         x = self.norm(x)
-        return self.act(x)
+        return self.activation(x)
 
 
-class ConvBlock(Conv_):
+class ConvBlock(_Conv):
     def __init__(
             self,
             in_channels,
@@ -67,8 +67,8 @@ class ConvBlock(Conv_):
             stride=2,
             padding=1,
             norm="batch",
-            act="elu",
-            leak=.1
+            activation="elu",
+            leak=.1,
             use_SN=True
         ):
         super().__init__()
@@ -80,11 +80,11 @@ class ConvBlock(Conv_):
             padding,
             bias=False
         )
-        super().__init__(out_channels, norm, act, leak, use_SN)
+        super().__init__(out_channels, norm, activation, leak, use_SN)
     
 
     
-class DeConvBlock(Conv_):
+class DeConvBlock(_Conv):
     def __init__(
             self,
             in_channels,
@@ -93,6 +93,8 @@ class DeConvBlock(Conv_):
             stride=2,
             padding=1,
             norm="batch",
+            activation="elu",
+            leak=.1,
             use_SN=True
         ):
         super().__init__()
@@ -105,13 +107,13 @@ class DeConvBlock(Conv_):
             bias=False
         )
 
-        super().__init__(out_channels, norm, use_SN)
-
+        super().__init__(out_channels, norm, activation, leak, use_SN)
+        
 
 
 # renaming it to gang cuz it's funnier
 class GANG(nn.Module):
-    def __init__(self, lat_dim, hidden_dim, depth, attention_layers=None, norm="batch", use_SN=True):
+    def __init__(self, lat_dim, hidden_dim, depth, attention_layers=None, norm="batch", activation="elu", leak=.1, use_SN=True):
         super().__init__()
         self.lat_dim = lat_dim
         self.attention_layers = attention_layers or []
@@ -126,6 +128,8 @@ class GANG(nn.Module):
             "stride":2,
             "padding":1,
             "norm": norm,
+            "activation": activation,
+            "leak": leak,
             "use_SN": use_SN
         }
 
@@ -147,7 +151,11 @@ class GANG(nn.Module):
             nn.ConvTranspose2d(
                 in_channels,
                 3,
-                **block_kwargs,
+                **{
+                    "kernel_size":4,
+                    "stride":2,
+                    "padding":1,
+                },
                 bias=False
             )
         )
@@ -162,7 +170,7 @@ class GANG(nn.Module):
 
 
 class GAND(nn.Module):
-    def __init__(self, hidden_dim, depth, attention_layers=None, norm="batch", use_SN=True):
+    def __init__(self, hidden_dim, depth, attention_layers=None, norm="batch", activation="elu", leak=.1, use_SN=True):
         super().__init__()
         self.attention_layers = attention_layers or []
 
@@ -172,6 +180,8 @@ class GAND(nn.Module):
                     "stride":2,
                     "padding":1,
                     "norm": norm,
+                    "activation": activation,
+                    "leak": leak,
                     "use_SN": use_SN
                 }
 
