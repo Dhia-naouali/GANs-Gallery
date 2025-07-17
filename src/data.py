@@ -50,7 +50,7 @@ class CarsDataset(Dataset):
         image_path = self.image_paths[idx]
 
         image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
-        return self.transforms(image)
+        return self.transform(image)
 
 
 
@@ -89,7 +89,7 @@ class AdaptiveDiscriminatorAugmentation:
             for image in images:
                 if random.random() < self.p:
                     image = transforms.ToPILImage(image.cpu())
-                    image = self.transforms(image)
+                    image = self.transform(image)
                 aug_images.append(image)
 
             return torch.stack(aug_images)
