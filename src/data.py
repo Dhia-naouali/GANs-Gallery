@@ -19,24 +19,24 @@ class CarsDataset(Dataset):
         self.transforms = self._init_transforms(augmentations or {})
 
     def _init_transforms(self, augs):
-        transforms = [transforms.Resize((self.image_size, self.image_size))]
+        transform = [transforms.Resize((self.image_size, self.image_size))]
 
         
         if augs.get("horizontal_flip", 0):
-            transforms.append(transforms.RandomHorizontalFlip(.5))
+            transform.append(transforms.RandomHorizontalFlip(.5))
         
         if augs.get("rotation", 0):
-            transforms.append(transforms.RandomRotation(augs["rotation"]))
+            transform.append(transforms.RandomRotation(augs["rotation"]))
 
         if augs.get("color_jitter", 0):
             p = augs["color_jitter"]
-            transforms.ColorJitter(
+            transform.ColorJitter(
                 brightness=p,
                 saturation=p,
                 hue=p//2
             )
 
-        transforms.extend([
+        transform.extend([
             transforms.ToTensor(),
             transforms.Normalize(.5, .5)
         ])
