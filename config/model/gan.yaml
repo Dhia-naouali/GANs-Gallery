@@ -1,7 +1,7 @@
 name: gan
 lat_dim: 128
-spectral_norm: true
 norm: batch
+spectral_norm: true
 self_attention: false
 
 generator:
