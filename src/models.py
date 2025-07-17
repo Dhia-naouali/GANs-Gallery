@@ -3,6 +3,13 @@ from torch import nn
 import torch.nn.functional as F
 from torch.nn.utils import spectral_norm
 
+
+class PixelNorm(nn.Module):
+    def forward(self, x):
+        return x / torch.sqrt(torch.mean(x ** 2, dim=1, keepdims=True) + 1e-8)
+
+
+
 class SelfAttention(nn.Module):
     def __init__(self, in_channels):
         super().__init__()
