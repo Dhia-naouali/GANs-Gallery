@@ -2,10 +2,11 @@ import torch
 from torch import optim
 from torch.cuda.amp import GradScaler, autocast
 
+import time
 import hydra
-from omegaconf import DictConfig, OmegaConf
-from tqdm import tqdm
 import wandb
+from tqdm import tqdm
+from omegaconf import DictConfig, OmegaConf
 
 from src.utils import (
     seed_all,
@@ -202,6 +203,36 @@ class Trainer:
 
         }
     
+
+    def train(self):
+        # main training loop script
+        for epoch in range(1, self.config.training.epochs + 1):
+            start_time = time.time()
+            epoch_metrics = self.train_epoch(epoch)
+
+            # if scheduler per epoch
+            self.G_scheduler.step()
+            self.D_scheduler.step()
+
+            if not epoch % self.config.training.sample_freq:
+                self.generate_samples(epoch)
+
+            if not epoch % self.config.training.save_every:
+                self.checkpoint_manager.save_checkpoint()
+
+            if wandb.run:
+                wandb.log({
+                    "epoch/G_loss": epoch_metrics["G_loss"],
+                    "epoch/D_loss": epoch_metrics["D_loss"],
+                    "epoch/real_acc": epoch_metrics["real_acc"],
+                    "epoch/fake_acc": epoch_metrics["fake_acc"],
+                    "epoch/time": time.time() - start_time,
+                    "dpoch": epoch,
+                })
+
+            
+
+
 
     def generate_samples(self, epoch):
         ...
