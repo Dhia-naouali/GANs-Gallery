@@ -33,18 +33,29 @@ class Conv_(nn.Module):
         "instance": nn.InstanceNorm2d
     }
     
-    def __init__(self, out_channels, norm, use_SN):
+    def __init__(self, out_channels, norm, act, leak, use_SN):
         super().__init__()
         if use_SN:
             self.conv = spectral_norm(self.conv)
 
         self.norm = self.NORMS[norm](out_channels)
-        self.act = nn.ReLU(inplace=True)
+        match act:
+            case "relu":
+                self.act = nn.ReLU(inplace=True)
+            case "leaky_relu":
+                self.act = nn.LeakyReLU(leak, inlace=True)
+            case "elu":
+                self.act = nn.ELU(inplace=True)
+            case "swich":
+                self.act = nn.SiLU(inplace=True)
+            case _:
+                raise Exception(f"invalid activation function config {act}")
+            
 
     def forward(self, x):
         x = self.conv(x)
         x = self.norm(x)
-        return self.act(x)        
+        return self.act(x)
 
 
 class ConvBlock(Conv_):
@@ -56,6 +67,8 @@ class ConvBlock(Conv_):
             stride=2,
             padding=1,
             norm="batch",
+            act="elu",
+            leak=.1
             use_SN=True
         ):
         super().__init__()
@@ -67,7 +80,7 @@ class ConvBlock(Conv_):
             padding,
             bias=False
         )
-        super().__init__(out_channels, norm, use_SN)
+        super().__init__(out_channels, norm, act, leak, use_SN)
     
 
     
