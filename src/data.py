@@ -62,10 +62,10 @@ class AdaptiveDiscriminatorAugmentation:
         self.p = 0
         self.real_acc_ema = 0.5
 
-        self.transforms = transforms.Compose([
+        self.transform = transforms.Compose([
             transforms.RandomHorizontalFlip(.5),
             transforms.RandomVerticalFlip(.1),
-            transforms.RandomRotatoin(10),
+            transforms.RandomRotation(10),
             transforms.ColorJitter(brightness=.2, contrast=.2, saturation=.2, hue=.1),
             transforms.RandomAffine(degrees=0, translate=(.1, .1), scale=(.9, 1.1)),
             transforms.ToTensor(),
@@ -74,10 +74,10 @@ class AdaptiveDiscriminatorAugmentation:
         ])
 
         def update(self, real_acc):
-            self.real_acc_ema = .99 * self._real_acc_ema + .01 * real_acc
+            self.real_acc_ema = .99 * self.real_acc_ema + .01 * real_acc
 
             if self.real_acc_ema > self.target_acc:
-                self.p = min(self.current_prob + self.p_step, self.max_prob)
+                self.p = min(self.p + self.p_step, self.max_prob)
             else:
                 self.p = max(self.p - self.p_step, 0)
 
