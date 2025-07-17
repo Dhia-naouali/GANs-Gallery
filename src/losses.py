@@ -4,8 +4,17 @@ import torch
 from torch import nn, autograd
 import torch.nn.functional as F
 
-class BCELoss:
-    def __init__(self, label_smoothing=.1):
+
+class Loss:
+    def generator_loss(self, fake_logits):
+        raise NotImplementedError
+    
+    def discriminator_loss(self, fake_logits, real_logits):
+        raise NotImplementedError
+
+
+class BCELoss(Loss):
+    def __init__(self, label_smoothing=0.):
         super().__init__()
         self.criterion = nn.BCEWithLogitsLoss()
         self.label_smoothing = label_smoothing
@@ -15,7 +24,6 @@ class BCELoss:
         return self.criterion(fake_logits, labels)
 
     def discriminator_loss(self, real_logits, fake_logits):
-
         real_labels = torch.full_like(real_logits, 1.0 - self.label_smoothing)
         fake_labels = torch.zeros_like(fake_logits)
 
@@ -25,8 +33,8 @@ class BCELoss:
         return (real_loss + fake_loss) * .5
     
 
-class WGANGPLoss:
-    def __init__(self, lambda_gp=10, device="cpu"):
+class WGANGPLoss(Loss):
+    def __init__(self, lambda_gp=10, device="cpu", D=None):
         self.lambda_ = lambda_gp
         self.D # a reference to the Discriminator
 
@@ -38,8 +46,9 @@ class WGANGPLoss:
     
     def gradient_penalty(self, D, fake_samples, real_samples):
         bs = real_samples.size(0)
+        device = real_samples.device
 
-        alpha = torch.randn(bs, 1, 1, 1, device=self.device)
+        alpha = torch.randn(bs, 1, 1, 1, device=device)
         interpolated_x = alpha * real_samples + (1 - alpha) * fake_samples
         interpolated_x.requires_grad_(True)
 
@@ -62,7 +71,7 @@ class WGANGPLoss:
 
 
 class RelavisticAverageGANLoss:
-    def __init__(self, device="cpu"):
+    def __init__(self):
         self.criterion = nn.BCEWithLigtsLoss()
 
     def generator_loss(self, fake_logits, real_logits):
