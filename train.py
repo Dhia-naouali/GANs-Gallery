@@ -132,7 +132,7 @@ class Trainer:
         }
 
 
-    def D_spep(self, real_images, noise):
+    def D_step(self, real_images, noise):
         self.D.zero_grad()
         with autocast(device_type=self.device):
             real_images.requires_grad_(True)
