@@ -58,3 +58,38 @@ class WGANGPLoss:
         grad_norm = grads.norm(2, dim=1)
         return self.lambda_ * ((grad_norm - 1) ** 2).mean()
     
+
+
+
+class RelavisticAverageGANLoss:
+    def __init__(self, device="cpu"):
+        self.criterion = nn.BCEWithLigtsLoss()
+
+    def generator_loss(self, fake_logits, real_logits):
+        real_loss = self.criterion(
+            real_logits - fake_logits.mean(),
+            torch.ones_like(real_logits)
+        )
+
+        fake_loss = self.criterion(
+            fake_logits - real_logits.mean(),
+            torch.zeros_like(real_logits)
+        )
+
+        return real_loss + fake_loss
+    
+
+    def discriminator_loss(self, fake_logits, real_logits):
+        real_loss = self.self.criterion(
+            real_logits - fake_logits.mean(),
+            torch.zeros_like(real_logits)
+        )
+
+        fake_loss = self.criterion(
+            fake_logits - real_logits.mean(),
+            torch.ones_like(real_logits)
+        )
+
+        return real_loss + fake_loss
+    
+
