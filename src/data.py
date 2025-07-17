@@ -97,7 +97,7 @@ class AdaptiveDiscriminatorAugmentation:
 
 
 
-def create_dataloader(root_dir, batch_size=32, image_size=256, num_workers=os.cpu_count(), pin_memory=True, augs=None):
+def setup_dataloader(root_dir, batch_size=32, image_size=256, num_workers=os.cpu_count(), pin_memory=True, augs=None):
     dataset = CarsDataset(
         root_dir=root_dir,
         image_size=image_size,

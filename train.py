@@ -15,8 +15,8 @@ from src.utils import (
     Scheduler,
     CheckpointManager,
 )
-from src.models import init_models
-from src.data import create_dataloader, AdaptiveDiscriminatorAugmentation
+from src.models import setup_models
+from src.data import setup_dataloader, AdaptiveDiscriminatorAugmentation
 
 
 
@@ -37,7 +37,7 @@ class Trainer:
 
         init_directories()
 
-        self.G, self.D = init_models(config.model)
+        self.G, self.D = setup_models(config.model)
         self.G.to(self.device); self.D.to(self.device)
 
         # proper weights_init (muP ?)
@@ -48,8 +48,8 @@ class Trainer:
         self.setup_optimizers()
         self.setup_loss()
 
-        self.dataloader = create_dataloader(
-            config...
+        self.dataloader = setup_dataloader(
+            config
         )
 
         if config.data.use_ADA:
@@ -139,7 +139,7 @@ class Trainer:
             real_images.requires_grad_(True)
             real_logits = self.D(real_images)
 
-            with torch.no_grad()
+            with torch.no_grad():
                 fake_images = self.G(noise).detach()
             fake_logits = self.D(fake_images)
 
@@ -208,7 +208,7 @@ class Trainer:
         # main training loop script
         for epoch in range(1, self.config.training.epochs + 1):
             start_time = time.time()
-            epoch_metrics = self.train_epoch(epoch)
+            epoch_metrics = self.train_epoch(epoch, self.config.training.epochs)
 
             # if scheduler per epoch
             self.G_scheduler.step()

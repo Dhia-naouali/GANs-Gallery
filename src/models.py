@@ -253,7 +253,7 @@ class GAND(nn.Module):
         x = self.cls_head(x)
         return x
 
-def init_models(config):
+def setup_models(config):
     lat_dim = config.get("lat_dim", 128)
     spectral_norm = config.get("pectral_norm", True)
     norm = config.get("norm", "batch")
