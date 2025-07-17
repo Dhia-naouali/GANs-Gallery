@@ -17,7 +17,7 @@ from src.utils import (
 )
 from src.models import setup_models
 from src.data import setup_dataloader, AdaptiveDiscriminatorAugmentation
-from src.losses import init_criterion
+from src.losses import setup_criterion
 
 
 class Trainer:
@@ -46,7 +46,7 @@ class Trainer:
               f"Discriminator: {count_params(self.D) * 1e-6:.2f}")
         
         self.setup_optimizers()
-        self.setup_loss()
+        self.setup_loss_and_regs()
 
         self.dataloader = setup_dataloader(
             config
@@ -103,10 +103,9 @@ class Trainer:
         self.D_scheduler = Scheduler(self.D_optimizer, config)
 
 
-    def setup_loss(self):
-        self.criterion = init_criterion(
+    def setup_loss_and_regs(self):
+        self.criterion = setup_criterion(
             self.config.loss,
-            device=self.device,
         )
 
         self.regs = {}

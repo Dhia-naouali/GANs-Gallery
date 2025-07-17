@@ -14,7 +14,7 @@ class CarsDataset(Dataset):
         self.image_paths = [
             os.path.join(self.root_dir, f)                 
             for f in os.listdir(self.root_dir)
-            ]
+        ]
 
         self.transforms = self._init_transforms(augmentations or {})
 
@@ -97,19 +97,20 @@ class AdaptiveDiscriminatorAugmentation:
 
 
 
-def setup_dataloader(root_dir, batch_size=32, image_size=256, num_workers=os.cpu_count(), pin_memory=True, augs=None):
+def setup_dataloader(config, augs=None):
+
     dataset = CarsDataset(
-        root_dir=root_dir,
-        image_size=image_size,
-        augmentations=augs
+        root_dir = config.data.get("root_dir", "data/afhq/cat"),
+        image_size = config.data.get("image_size", 256),
+        augmentations = config.data.get("augmentations", {})
     )
 
     dataloader = DataLoader(
         dataset,
-        batch_size=batch_size,
-        shuffle=True, # no test data ...
-        num_workers=num_workers,
-        pin_memory=pin_memory,
+        batch_size=config.training.get("batch_size", 32),
+        shuffle=True,
+        num_workers=config.training.get("num_workers", os.cpu_count()),
+        pin_memory=config.training.get("pin_memory", True),
         drop_last=True,
     )
 

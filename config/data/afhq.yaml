@@ -1,5 +1,4 @@
-name: afhq
-root_dir: ./data/afhq
+root_dir: ./data/afhq/cat
 image_size: 256
 augmentations:
   horizontal_flip: true

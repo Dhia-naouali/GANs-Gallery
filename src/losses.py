@@ -5,6 +5,7 @@ from torch import nn, autograd
 import torch.nn.functional as F
 
 
+
 class Loss:
     def generator_loss(self, fake_logits):
         raise NotImplementedError
@@ -34,7 +35,7 @@ class BCELoss(Loss):
     
 
 class WGANGPLoss(Loss):
-    def __init__(self, lambda_gp=10, device="cpu", D=None):
+    def __init__(self, lambda_gp=10, D=None):
         self.lambda_ = lambda_gp
         self.D # a reference to the Discriminator
 
@@ -103,6 +104,17 @@ class RelavisticAverageGANLoss:
     
 
 
+LOSSES = {
+    "bce": BCELoss,
+    "wgan-gp": WGANGPLoss,
+    "ragan": RelavisticAverageGANLoss
+}
+
+def setup_criterion(config):
+    # temp
+    return LOSSES[config.get("criterion", "bce")]()
+    
+
 class R1R2Regularizer:
     def __init__(self, lambda_r1=10):
         self.lambda_ = lambda_r1
@@ -132,10 +144,10 @@ class R1R2Regularizer:
     
 
 
-class PathLengthREgularizer:
-    def __init__(self, lambda_path_len=2, path_len_decay=1e-2):
-        self.lambda_ = lambda_path_len
-        self.decay_ = path_len_decay
-        self.mean_ = torch.ones(1)
+# class PathLengthREgularizer:
+#     def __init__(self, lambda_path_len=2, path_len_decay=1e-2):
+#         self.lambda_ = lambda_path_len
+#         self.decay_ = path_len_decay
+#         self.mean_ = torch.ones(1)
 
-    def __call__(self, fake_images, lat_):
+#     def __call__(self, fake_images, lat_):
