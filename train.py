@@ -52,7 +52,7 @@ class Trainer:
             config
         )
 
-        if config.data.use_ADA:
+        if config.ADA.use_ADA:
             self.ada = AdaptiveDiscriminatorAugmentation(
                 target_acc=config.data.ada_target_acc
             )

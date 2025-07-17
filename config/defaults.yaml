@@ -26,7 +26,7 @@ loss:
 seed: 12
 device: cuda
 
-augmentations:
+ADA:
   use_ADA: false
   ada_target_acc: 0.6
   horizontal_flip: true
