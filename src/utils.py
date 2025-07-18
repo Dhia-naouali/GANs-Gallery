@@ -236,7 +236,7 @@ class MetricsTracker:
 
 class CheckpointManager:
     def __init__(self, checkpoint_dir, G, D, G_optimizer, D_optimizer):
-        self.dir = checkpoint_dir
+        self.checkpoint_dir = checkpoint_dir
         self.G = G
         self.D = D
         self.G_optimizer = G_optimizer

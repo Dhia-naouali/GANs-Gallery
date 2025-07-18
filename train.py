@@ -105,8 +105,9 @@ class Trainer:
             weight_decay=config.weight_decay,
         )
 
-        self.G_scheduler = setup_scheduler(self.G_optimizer, len(self.dataloader), self.config)
-        self.D_scheduler = setup_scheduler(self.D_optimizer, len(self.dataloader), self.config)
+        total_steps = len(self.dataloader) * len(self.dataloader.dataset)
+        self.G_scheduler = setup_scheduler(self.G_optimizer, total_steps, self.config)
+        self.D_scheduler = setup_scheduler(self.D_optimizer, total_steps, self.config)
 
 
     def setup_loss_and_regs(self):

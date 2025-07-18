@@ -260,7 +260,7 @@ def setup_models(config):
     activation = config.get("activation", "elu")
     leak = config.get("leak", .1)
     
-    G_config = config.get("Generator", {})   
+    G_config = config.get("generator", {})
     generator = GANG(
         lat_dim=lat_dim,
         hidden_dim=G_config.get("hidden_dim", 128),
@@ -274,7 +274,7 @@ def setup_models(config):
     )
 
 
-    D_config = config.get("Discriminator", {})
+    D_config = config.get("discriminator", {})
     descriminator = GAND(
         hidden_dim=D_config.get("hidden_dim", 128),
         depth=D_config.get("depth", 4),
