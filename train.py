@@ -129,10 +129,10 @@ class Trainer:
         noise = torch.randn(bs, self.config.model.lat_dim, device=self.device)
 
         # D step
-        D_loss, real_acc, fake_acc = self.D_train_step(real_images, noise)
+        D_loss, real_acc, fake_acc, real_logits = self.D_train_step(real_images, noise)
 
         # G step
-        G_loss = self.G_train_step(noise, real_images)
+        G_loss = self.G_train_step(noise, real_logits)
 
         if self.ada:
             self.ada.update(real_acc)
@@ -167,7 +167,7 @@ class Trainer:
             fake_acc = (torch.tanh(fake_logits) < 0).float().mean().item()
             real_acc = (torch.tanh(real_logits) > 0).float().mean().item()
 
-        return D_loss.item(), fake_acc, real_acc
+        return D_loss.item(), fake_acc, real_acc, real_logits
 
     def G_train_step(self, noise, real_logits):
         self.G.zero_grad()
