@@ -90,7 +90,7 @@ class RelavisticAverageGANLoss:
     
 
     def discriminator_loss(self, fake_logits, real_logits):
-        real_loss = self.self.criterion(
+        real_loss = self.criterion(
             real_logits - fake_logits.mean(),
             torch.zeros_like(real_logits)
         )
