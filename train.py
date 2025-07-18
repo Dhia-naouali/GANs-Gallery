@@ -225,7 +225,6 @@ class Trainer:
             self.G,
             num_samples=32,
             lat_dim=self.config.model.lat_dim,
-            device=self.device
         )
 
         
