@@ -85,6 +85,7 @@ class AdaptiveDiscriminatorAugmentation:
             self.p = max(self.p - self.p_step, 0)
 
     def __call__(self, images):
+        device = images.device
         if self.p == 0:
             return images
         
@@ -95,7 +96,7 @@ class AdaptiveDiscriminatorAugmentation:
                 image = (
                     ((image * .5) + .5) * 255
                 ).astype(np.uint8)
-                image = self.transform(image=image)["image"]
+                image = self.transform(image=image)["image"].to(device)
             aug_images.append(image)
 
         return torch.stack(aug_images)
