@@ -229,11 +229,7 @@ class Trainer:
 
         
         sample_path = os.path.join(self.config.sample_dir, f"epoch_{epoch:04d}.png")
-<<<<<<< HEAD
         save_sample_images(sample_grid, sample_path, rows=4)
-=======
-        save_sample_images(sample_grid, sample_path, nrows=4)
->>>>>>> 35651f7 (graph retention !!)
         
         # set back to train mode since it could be called mid training
         self.G.train()
