@@ -59,7 +59,7 @@ class CarsDataset(Dataset):
 
 
 class AdaptiveDiscriminatorAugmentation:
-    def __init__(self, target_acc=.6, adjustment_speed=1e-3, max_prob=.8):
+    def __init__(self, target_acc=.6, adjustment_speed=1e-2, max_prob=.8):
         self.target_acc = target_acc
         self.p_step = adjustment_speed
         self.max_prob = max_prob
