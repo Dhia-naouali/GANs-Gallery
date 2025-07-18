@@ -52,12 +52,10 @@ class Trainer:
         self.setup_optimizers()
         self.setup_loss_and_regs()
 
-        if config.ADA.use_ADA:
-            self.ada = AdaptiveDiscriminatorAugmentation(
-                target_acc=config.data.ada_target_acc
-            )
-        else:
-            self.ada = None
+
+        self.ada = AdaptiveDiscriminatorAugmentation(
+            target_acc=config.ADA.ada_target_acc
+        ) if config.ADA.use_ADA else None
 
 
         self.G_scaler = GradScaler(device=self.device)
