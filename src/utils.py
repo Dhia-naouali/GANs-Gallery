@@ -84,9 +84,37 @@ class Scheduler(optim.lr_scheduler._LRScheduler):
             super().step()
 
     def warm_up(self):
-        if self.last_epoch < self.warmup_steps:
-            return self.last_epoch / max(1, self.warmup_steps)
+        if self.last_epoch < self.warm_up_steps:
+            return self.last_epoch / max(1, self.warm_up_steps)
         return None
+
+
+
+class WarmUpCosineScheduler(Scheduler):
+    NAME = "warm_up_cosine"
+    def __init__(self, optimizer, total_steps, config):
+        self.total_steps = total_steps
+
+        self.eta_min_ratio = config.get("eta_min_ratio", 1e-2)
+        warm_up_phase = config.get("warm_up_phase", 0.05)
+        warm_up_phase = warm_up_phase / 100 if warm_up_phase > 1 else warm_up_phase
+
+        self.warm_up_steps = int(total_steps * warm_up_phase)
+        self.peak_lr = optimizer.param_groups[0]['lr']
+        super().__init__(optimizer)
+
+
+    def get_lr(self):
+        scale = super().warm_up()
+        if scale is None:
+            progress = (self.last_epoch - self.warm_up_steps) / max(1, self.total_steps - self.warm_up_steps)
+            scale = self.eta_min_ratio + (1 - self.eta_min_ratio) * 0.5 * (1 + math.cos(math.pi * progress))
+
+        lrs = [
+            base_lr * scale
+            for base_lr in self.base_lrs
+        ]
+        return lrs
 
 
 class WarmUpLinearDecayScheduler(Scheduler):
@@ -94,7 +122,11 @@ class WarmUpLinearDecayScheduler(Scheduler):
     def __init__(self, optimizer, total_steps, config):
         self.total_steps = total_steps
         self.init_lr = optimizer.param_groups[0]['lr']
-        self.min_lr = config.get("min_lr", 5e-8)
+        self.min_lr = config.get("min_lr", 5e-6)
+
+        warm_up_phase = config.get("warm_up_phase", 0.05)
+        warm_up_phase = warm_up_phase / 100 if warm_up_phase > 1 else warm_up_phase
+        self.warm_up_steps = int(total_steps * warm_up_phase)
         super().__init__(optimizer)
 
 
@@ -104,34 +136,6 @@ class WarmUpLinearDecayScheduler(Scheduler):
             progress = self.last_epoch / self.total_steps
             progress = min(max(progress, 0), 1)
             scale = (1 - progress) + self.min_lr * progress
-
-        lrs = [
-            base_lr * scale
-            for base_lr in self.base_lrs
-        ]
-        return lrs
-
-
-class WarmUpCosineScheduler(Scheduler):
-    NAME = "warm_up_cosine"
-    def __init__(self, optimizer, total_steps, config):
-        self.total_steps = total_steps
-
-        self.eta_min_ratio = config.get("eta_min_ratio", 1e-2)
-        warmup_phase = config.get("warm_up_phase", 0.05)
-        if warmup_phase > 1:
-            warmup_phase /= 100
-
-        self.warmup_steps = int(total_steps * warmup_phase)
-        self.peak_lr = optimizer.param_groups[0]['lr']
-        super().__init__(optimizer)
-
-
-    def get_lr(self):
-        scale = super().warm_up()
-        if scale is None:
-            progress = (self.last_epoch - self.warmup_steps) / max(1, self.total_steps - self.warmup_steps)
-            scale = self.eta_min_ratio + (1 - self.eta_min_ratio) * 0.5 * (1 + math.cos(math.pi * progress))
 
         lrs = [
             base_lr * scale
