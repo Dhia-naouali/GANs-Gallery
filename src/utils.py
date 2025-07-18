@@ -128,6 +128,27 @@ class WarmUpCosine(Scheduler):
         return lrs
 
 
+class Step(Scheduler):
+    NAME = "step"
+    def __init__(self, optimizer, total_steps, config):
+        self.update_freq = config.get("update_freq", 1)
+        self.gamma = config.get("gamma", .98)
+        self.calls = 0
+        super().__init__(optimizer)
+
+
+    def get_lr(self):
+        self.calls += 1
+        scale = self.gamma if not self.calls % self.update_freq else 1
+ 
+        lrs = [
+            base_lr * scale
+            for base_lr in self.base_lrs
+        ]
+        return lrs
+
+
+
 SCHEDULERS = {
         "warm_up_cosine": None,
         "warm_up_linear": WarmUpLinearDecay,
