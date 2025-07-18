@@ -41,7 +41,7 @@ def generate_sample_images(
 
 def save_sample_images(images, path, rows=4):
     images = (images + 1) / 2
-    save_image(images, path, nrows=rows)
+    save_image(images, path, nrow=rows)
 
 
 def setup_directories(config):
