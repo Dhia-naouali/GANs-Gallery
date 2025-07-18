@@ -26,13 +26,8 @@ from src.losses import setup_criterion
 
 class Trainer:
     def __init__(self, config):
-        # init directories: samples, chekcpoints, ...
-        # scheduler
         # regulizers
-        # scalers
-        # checkpoint manager
         # compile ?
-        # metrics
 
 
         self.config = config
@@ -123,7 +118,7 @@ class Trainer:
 
 
     def train_step(self, real_images):
-        # called from train_epoch: G & D in train mode 
+        # called from train_epoch: G & D in train mode
         bs = real_images.size(0)
 
         if self.ada:
@@ -199,6 +194,9 @@ class Trainer:
             real_images = real_images.to(self.device)
             step_metrics = self.train_step(real_images)
             self.tracker.log(step_metrics, batch_idx, pbar=pbar)
+            
+            del real_images, step_metrics
+            torch.cuda.empty_cache()            
 
         return {**self.tracker.averages(), "epoch_time": time.time() - start_time}
 
@@ -221,7 +219,10 @@ class Trainer:
                 )
                 
 
+    @torch.no_grad()
     def generate_samples(self, epoch):
+        self.G.eval()
+        
         sample_grid = generate_sample_images(
             self.G,
             num_samples=32,
@@ -229,9 +230,15 @@ class Trainer:
             device=self.device
         )
 
+        
         sample_path = os.path.join(self.config.sample_dir, f"epoch_{epoch:04d}.png")
         save_sample_images(sample_grid, sample_path, nrows=4)
-
+        
+        del sample_grid
+        torch.cuda.empty_cache()
+        
+        # set back to train mode since it could be called mid training
+        self.G.train()
 
 
 @hydra.main(config_path="config", config_name="defaults.yaml", version_base=None)

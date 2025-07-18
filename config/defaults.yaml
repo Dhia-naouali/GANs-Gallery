@@ -9,8 +9,8 @@ defaults:
 
 training:
   epochs: 160
-  batch_size: 2
-  image_size: 32
+  batch_size: 16
+  image_size: 256
   pin_memory: true
   compile: true
   save_every: 10
@@ -28,7 +28,7 @@ seed: 12
 device: cuda
 
 ADA:
-  use_ADA: false
+  use_ADA: True
   ada_target_acc: 0.6
   horizontal_flip: true
 
