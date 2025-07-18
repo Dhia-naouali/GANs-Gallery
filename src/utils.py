@@ -53,17 +53,21 @@ def setup_directories(config):
 class Scheduler(optim.lr_scheduler._LRScheduler):
     PER_STEP = object()
     PER_EPOCH = object()
+    NEVER = object()
     FREQ = {
         "warm_up_cosine": PER_STEP,
         "warm_up_linear": PER_STEP,
         "step_decay": PER_EPOCH,
-        "constant": PER_EPOCH, # will be ignored :'(
+        "constant": NEVER, # will be ignored :'(
     }
 
     def __init__(self, optimizer):
         super().__init__(optimizer, last_epoch=-1)
 
     def take_step(self, epoch_call=False):
+        if self.FREQ[self.NAME] == self.NEVER:
+            return False
+
         if (
             self.FREQ[self.NAME] == self.PER_STEP and 
             epoch_call
@@ -72,6 +76,7 @@ class Scheduler(optim.lr_scheduler._LRScheduler):
             not epoch_call
         ):
             return False
+
         return True
     
     def step(self, epoch_call=False):
@@ -80,7 +85,7 @@ class Scheduler(optim.lr_scheduler._LRScheduler):
 
 
 
-class WarmUpLinearDecay(Scheduler):
+class WarmUpLinearDecayScheduler(Scheduler):
     NAME = "warm_up_linear"
     def __init__(self, optimizer, total_steps, config):
         self.total_steps = total_steps
@@ -100,7 +105,7 @@ class WarmUpLinearDecay(Scheduler):
         return lrs
 
 
-class WarmUpCosine(Scheduler):
+class WarmUpCosineScheduler(Scheduler):
     def __init__(self, optimizer, total_steps, config):
         self.total_steps = total_steps
 
@@ -128,7 +133,7 @@ class WarmUpCosine(Scheduler):
         return lrs
 
 
-class StepDecay(Scheduler):
+class StepDecayScheduler(Scheduler):
     NAME = "step_decay"
     def __init__(self, optimizer, total_steps, config):
         self.update_freq = config.get("update_freq", 1)
@@ -149,11 +154,18 @@ class StepDecay(Scheduler):
 
 
 
+class ConstantScheduler(Scheduler):
+    NAME = "constant"
+    def __init__(self, optimizer, total_steps, config):
+        super().__init__(optimizer)
+
+
+
 SCHEDULERS = {
-        "warm_up_cosine": None,
-        "warm_up_linear": WarmUpLinearDecay,
-        "step": None,
-        "constant": None,
+        "warm_up_cosine": WarmUpCosineScheduler,
+        "warm_up_linear": WarmUpLinearDecayScheduler,
+        "step_decay": StepDecayScheduler,
+        "constant": ConstantScheduler,
     }
 
 
