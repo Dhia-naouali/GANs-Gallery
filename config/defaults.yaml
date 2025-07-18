@@ -14,7 +14,7 @@ training:
   pin_memory: true
   compile: true
   save_every: 40
-  sample_every: 1
+  sample_every: 10
   eval_every: 1
   beta1: 0.5
   beta2: 0.9
