@@ -8,5 +8,5 @@ some combinations include cows, tuxedos and
 the sure thing is they make our FYPs much more intertaining
 the aim of this project is to create more of'em 
 
-note to self: start documenting and sharing papers  
-Done, notion notes linked
+![image](data/download.jpg)
+                           *looking at the repo stars*
