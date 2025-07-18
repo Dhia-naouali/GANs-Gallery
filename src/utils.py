@@ -22,11 +22,7 @@ def seed_all(seed=12):
 def count_params(model, trainable_only=False):
     if trainable_only:
         return sum(p.numel() for p in model.parameters() if p.requires_grad)
-    return sum(p.numel() for p in model.parameters()) 
-
-
-def log_to_wandb():
-    ...
+    return sum(p.numel() for p in model.parameters())
 
 
 @torch.no_grad
@@ -45,8 +41,6 @@ def generate_sample_images(
     save_image(fake_images, path, nrow=rows)
 
 
-
-
 def setup_directories(config):
     for dir in [
         config.get("log_dir", "logs"),
@@ -56,31 +50,67 @@ def setup_directories(config):
         os.makedirs(dir, exist_ok=True)
 
 
-
 class Scheduler(optim.lr_scheduler._LRScheduler):
     PER_STEP = object()
     PER_EPOCH = object()
     FREQ = {
         "warm_up_cosine": PER_STEP,
-        "warmp_up_linear": PER_STEP,
+        "warm_up_linear": PER_STEP,
         "step": PER_EPOCH,
         "constant": PER_EPOCH, # will be ignored :'(
     }
 
-    def __init__(self, optimizer, total_steps, config):
+    def __init__(self, optimizer):
         super().__init__(optimizer, last_epoch=-1)
 
     def take_step(self):
+        print([c.function for c in inspect.stack()])
         if (
-            self.FREQ[self.name] == self.PER_STEP and 
+            self.FREQ[self.NAME] == self.PER_STEP and 
             inspect.stack()[1].function == "train_step"
         ) or (
-            self.FREQ[self.name] == self.PER_EPOCH and 
+            self.FREQ[self.NAME] == self.PER_EPOCH and 
             inspect.stack()[1].function == "train_epoch"
         ):
             return False
         return True
 
+
+
+class WarmUpLinearDecay(Scheduler):
+    NAME = "warm_up_linear"
+    def __init__(self, optimizer, total_steps, config):
+        self.total_steps = total_steps
+        self.init_lr = optimizer.param_groups[0]['lr']
+        self.min_lr = config.get("min_lr", 5e-8)
+        super().__init__(optimizer)
+
+    def step(self):
+        if super().take_step():
+            super().step()
+
+
+    def get_lr(self):
+        progress = self.last_epoch / self.total_steps
+        progress = min(max(progress, 0), 1)
+        
+        lrs = [
+            base_lr * (1 - progress) + self.min_lr * progress
+            for base_lr in self.base_lrs
+        ]
+        return lrs
+
+
+SCHEDULERS = {
+        "warm_up_cosine": None,
+        "warm_up_linear": WarmUpLinearDecay,
+        "step": None,
+        "constant": None,
+    }
+
+
+def setup_scheduler(optimizer, total_steps, config):
+    return SCHEDULERS[config.scheduler.name](optimizer, total_steps, config.scheduler)
 
 
 class CheckpointManager:
