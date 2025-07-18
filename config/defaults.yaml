@@ -13,9 +13,9 @@ training:
   image_size: 256
   pin_memory: true
   compile: true
-  save_every: 10
-  sample_every: 10
-  eval_every: 10
+  save_every: 1
+  sample_every: 1
+  eval_every: 1
   beta1: 0.5
   beta2: 0.9
 
