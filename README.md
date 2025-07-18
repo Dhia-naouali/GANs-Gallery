@@ -10,5 +10,5 @@ the aim of this project is to create more of'em
 
 <p align="center">
   <img src="data/download.jpg" width="640"><br>
-  <em>admire the stars morty (none, atm)</em>
+  <em>admire the stars morty (none atm)</em>
 </p>
