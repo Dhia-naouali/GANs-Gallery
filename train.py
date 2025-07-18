@@ -132,7 +132,7 @@ class Trainer:
         D_loss, real_acc, fake_acc = self.D_train_step(real_images, noise)
 
         # G step
-        G_loss = self.G_train_step(noise)
+        G_loss = self.G_train_step(noise, real_images)
 
         if self.ada:
             self.ada.update(real_acc)
@@ -157,7 +157,7 @@ class Trainer:
                 fake_images = self.G(noise).detach()
             fake_logits = self.D(fake_images)
 
-            D_loss = self.criterion.discriminator_loss(real_logits, fake_logits)
+            D_loss = self.criterion.discriminator_loss(fake_logits, real_logits)
         
         self.D_scaler.scale(D_loss).backward()
         self.D_scaler.step(self.D_optimizer)
@@ -169,14 +169,14 @@ class Trainer:
 
         return D_loss.item(), fake_acc, real_acc
 
-    def G_train_step(self, noise):
+    def G_train_step(self, noise, real_logits):
         self.G.zero_grad()
 
         with autocast(device_type=self.device.type):
             fake_images = self.G(noise)
             fake_logits = self.D(fake_images)
 
-            G_loss = self.criterion.generator_loss(fake_logits)
+            G_loss = self.criterion.generator_loss(fake_logits, real_logits)
         self.G_scaler.scale(G_loss).backward()
         self.G_scaler.step(self.G_optimizer)
         self.G_scaler.update()

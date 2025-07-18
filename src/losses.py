@@ -20,11 +20,11 @@ class BCELoss(Loss):
         self.criterion = nn.BCEWithLogitsLoss()
         self.label_smoothing = label_smoothing
 
-    def generator_loss(self, fake_logits):
+    def generator_loss(self, fake_logits, real_logits):
         labels = torch.ones_like(fake_logits)
         return self.criterion(fake_logits, labels)
 
-    def discriminator_loss(self, real_logits, fake_logits):
+    def discriminator_loss(self, fake_logits, real_logits):
         real_labels = torch.full_like(real_logits, 1.0 - self.label_smoothing)
         fake_labels = torch.zeros_like(fake_logits)
 
