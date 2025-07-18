@@ -63,14 +63,13 @@ class Scheduler(optim.lr_scheduler._LRScheduler):
     def __init__(self, optimizer):
         super().__init__(optimizer, last_epoch=-1)
 
-    def take_step(self):
-        print([c.function for c in inspect.stack()])
+    def take_step(self, epoch_call=False):
         if (
             self.FREQ[self.NAME] == self.PER_STEP and 
-            inspect.stack()[1].function == "train_step"
+            epoch_call
         ) or (
             self.FREQ[self.NAME] == self.PER_EPOCH and 
-            inspect.stack()[1].function == "train_epoch"
+            not epoch_call
         ):
             return False
         return True
@@ -85,8 +84,8 @@ class WarmUpLinearDecay(Scheduler):
         self.min_lr = config.get("min_lr", 5e-8)
         super().__init__(optimizer)
 
-    def step(self):
-        if super().take_step():
+    def step(self, epoch_call=False):
+        if super().take_step(epoch_call):
             super().step()
 
 

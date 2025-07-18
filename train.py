@@ -210,8 +210,8 @@ class Trainer:
             epoch_metrics = self.train_epoch(epoch, self.config.training.epochs)
 
             # if scheduler per epoch
-            self.G_scheduler.step()
-            self.D_scheduler.step()
+            self.G_scheduler.step(epoch_call=True)
+            self.D_scheduler.step(epoch_call=True)
 
             if not epoch % self.config.training.sample_freq:
                 self.generate_samples(epoch)
