@@ -21,11 +21,11 @@ class CarsDataset(Dataset):
         self.transform = self._init_A(augmentations or {})
 
     def _init_A(self, augs):
-        transform = [A.Resize((self.image_size, self.image_size))]
+        transform = [A.Resize(self.image_size, self.image_size)]
 
 
         if augs.get("horizontal_flip", 0):
-            transform.append(A.RandomHorizontalFlip(.5))
+            transform.append(A.HorizontalFlip(.5))
         
         if augs.get("rotation", 0):
             transform.append(A.Rotate(augs.get("rotation", 0)))
@@ -67,8 +67,8 @@ class AdaptiveDiscriminatorAugmentation:
         self.real_acc_ema = 0.5
 
         self.transform = A.Compose([
-            A.RandomHorizontalFlip(.5),
-            A.RandomVerticalFlip(.1),
+            A.HorizontalFlip(.5),
+            A.VerticalFlip(.1),
             A.Rotate(10),
             A.ColorJitter(brightness=.2, contrast=.2, saturation=.2, hue=.1),
             A.Affine(degrees=0, translate_percent=(.1, .1), scale=(.9, 1.1)),

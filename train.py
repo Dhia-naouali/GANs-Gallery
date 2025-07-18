@@ -1,6 +1,6 @@
 import torch
 from torch import optim
-from torch.cuda.amp import GradScaler, autocast
+from torch.amp import GradScaler, autocast
 
 import time
 import hydra
@@ -60,8 +60,8 @@ class Trainer:
             self.ada = None
 
 
-        self.G_scaler = GradScaler()
-        self.D_scaler = GradScaler()
+        self.G_scaler = GradScaler(device=self.device)
+        self.D_scaler = GradScaler(device=self.device)
 
         # self.checkpoint_manager = CheckPointManager(
         #     ...
@@ -140,7 +140,7 @@ class Trainer:
 
     def D_train_step(self, real_images, noise):
         self.D.zero_grad()
-        with autocast(device_type=self.device):
+        with autocast(device_type=self.device.type):
             real_images.requires_grad_(True)
             real_logits = self.D(real_images)
 
@@ -163,7 +163,7 @@ class Trainer:
     def G_train_step(self, noise):
         self.G.zero_grad()
 
-        with autocast(device_type=self.device):
+        with autocast(device_type=self.device.type):
             fake_images = self.G(noise)
             fake_logits = self.D(fake_images)
 
@@ -175,7 +175,6 @@ class Trainer:
         return G_loss
 
 
-
     def train_epoch(self, epoch, epochs):
         self.G.train()
         self.D.train()
@@ -184,7 +183,7 @@ class Trainer:
 
         for batch_idx, real_images in enumerate(pbar):
             real_images = real_images.to(self.device)
-            step_metrics = self.step(real_images)
+            step_metrics = self.train_step(real_images)
 
             pbar.set_postfix({
                 k: f"{step_metrics[k]:.4f}" 

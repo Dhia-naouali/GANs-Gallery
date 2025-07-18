@@ -8,8 +8,8 @@ defaults:
 
 training:
   epochs: 160
-  batch_size: 32
-  image_size: 256
+  batch_size: 2
+  image_size: 32
   pin_memory: true
   compile: true
   save_every: 10

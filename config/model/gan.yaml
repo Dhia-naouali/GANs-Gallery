@@ -6,10 +6,10 @@ activation: elu
 leak: 0.1
 
 generator:
-  hidden_dim: 128
-  depth: 4
+  hidden_dim: 16
+  depth: 2
   attention_layers: 
 
 discriminator: 
-  hidden_eim: 128
-  depth: 4
+  hidden_eim: 16
+  depth: 2
