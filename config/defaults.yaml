@@ -33,5 +33,5 @@ ADA:
   horizontal_flip: true
 
 log_dir: ./logs
-ckeckpoint_dir: ./checkpoints
+checkpoint_dir: ./checkpoints
 sample_dir: ./samples

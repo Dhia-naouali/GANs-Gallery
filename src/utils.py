@@ -39,7 +39,7 @@ def generate_sample_images(
     return fake_images
 
 
-def save_smaple_images(images, path, rows=4):
+def save_sample_images(images, path, rows=4):
     images = (images + 1) / 2
     save_image(images, path, rows)
 
@@ -203,7 +203,7 @@ class MetricsTracker:
             self.avg = self.sum / self.count
 
 
-    names = ["G_loss", "D_loss", "fake_acc", "real_acc"]
+    names = ["G_loss", "D_loss", "fake_acc", "real_acc"] #, "epoch_time"]
     def __init__(self, log_freq):
         self.log_freq = log_freq
         self.tracked_metrics = {name: self.Metric(name) for name in self.names}
@@ -226,11 +226,11 @@ class MetricsTracker:
 
     def averages(self):
         return {
-            metric.avg for metric in self.tracked_metrics
+            metric: metric.avg for metric in self.tracked_metrics.values()
         }
 
     def reset(self):
-        for metric in self.tracked_metrics:
+        for metric in self.tracked_metrics.values():
             metric.reset()
 
 
@@ -273,3 +273,4 @@ class CheckpointManager:
 
     def cherry_pick(self):
         # to be called at the end to pick the best checkpoint
+        ...

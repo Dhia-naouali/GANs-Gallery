@@ -69,7 +69,7 @@ class Trainer:
         self.D_scaler = GradScaler(device=self.device)
 
         self.checkpoint_manager = CheckpointManager(
-            self.checkpoint_dir,
+            self.config.checkpoint_dir,
             self.G,
             self.D,
             self.G_optimizer,
@@ -188,6 +188,7 @@ class Trainer:
 
 
     def train_epoch(self, epoch, epochs):
+        start_time = time.time()
         self.G.train()
         self.D.train()
         self.tracker.reset()
@@ -197,21 +198,20 @@ class Trainer:
         for batch_idx, real_images in enumerate(pbar):
             real_images = real_images.to(self.device)
             step_metrics = self.train_step(real_images)
-            self.tracker.log(step_metrics, batch_idx, pbar=pbar, wandb_=True)
+            self.tracker.log(step_metrics, batch_idx, pbar=pbar)
 
-        return self.tracker.averages()
+        return {**self.tracker.averages(), "epoch_time": time.time() - start_time}
 
 
     def train(self):
         # main training loop script
         for epoch in range(1, self.config.training.epochs + 1):
-            start_time = time.time()
             epoch_metrics = self.train_epoch(epoch, self.config.training.epochs)
 
             self.G_scheduler.step(epoch_call=True)
             self.D_scheduler.step(epoch_call=True)
 
-            if not epoch % self.config.training.sample_freq:
+            if not epoch % self.config.training.sample_every:
                 self.generate_samples(epoch)
 
             if not epoch % self.config.training.save_every:
