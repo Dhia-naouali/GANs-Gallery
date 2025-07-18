@@ -235,5 +235,41 @@ class MetricsTracker:
 
 
 class CheckpointManager:
-    def __init__(self, *args):
-        ...
+    def __init__(self, checkpoint_dir, G, D, G_optimizer, D_optimizer):
+        self.dir = checkpoint_dir
+        self.G = G
+        self.D = D
+        self.G_optimizer = G_optimizer
+        self.D_optimizer = D_optimizer
+        os.makedirs(checkpoint_dir, exist_ok=True)
+
+
+    def save(self, epoch, epoch_metrics):
+        checkpoint = {
+            "epoch": epoch,
+            "metrics": epoch_metrics,
+            "generator_state_dict": self.G.state_dict(),
+            "discriminator_state_dict": self.D.state_dict(),
+            "generator_optimizer_state_dict": self.G_optimizer.state_dict(),
+            "discriminator_optimizer_state_dict": self.D_optimizer.state_dict(),
+        }
+
+        torch.save(
+            checkpoint, 
+            os.path.join(
+                self.checkpoint_dir,
+                f"checkpoint_{epoch:04d}.pth"
+            )
+        )
+
+    def load(self, checkpoint):
+        checkpoint = torch.load(checkpoint, map_location=self.G.device)
+        
+        self.G.load_state_dict(checkpoint["generator_state_dict"])
+        self.D.load_state_dict(checkpoint["discriminator_state_dict"])
+        self.G_optimizer.load_state_dict(checkpoint["generator_optimizer_state_dict"])
+        self.D_optimizer.load_state_dict(checkpoint["discriminator_optimizer_state_dict"])
+
+
+    def cherry_pick(self):
+        # to be called at the end to pick the best checkpoint

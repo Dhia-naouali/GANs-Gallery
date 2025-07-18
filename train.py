@@ -2,6 +2,7 @@ import torch
 from torch import optim
 from torch.amp import GradScaler, autocast
 
+import os
 import time
 import hydra
 import wandb
@@ -67,9 +68,13 @@ class Trainer:
         self.G_scaler = GradScaler(device=self.device)
         self.D_scaler = GradScaler(device=self.device)
 
-        # self.checkpoint_manager = CheckPointManager(
-        #     ...
-        # )
+        self.checkpoint_manager = CheckpointManager(
+            self.checkpoint_dir,
+            self.G,
+            self.D,
+            self.G_optimizer,
+            self.D_optimizer
+        )
 
         self.tracker = MetricsTracker(log_freq=self.config.wandb.log_freq)
 
@@ -210,8 +215,11 @@ class Trainer:
                 self.generate_samples(epoch)
 
             if not epoch % self.config.training.save_every:
-                self.checkpoint_manager.save_checkpoint()
-
+                self.checkpoint_manager.save(
+                    epoch,
+                    epoch_metrics
+                )
+                
 
     def generate_samples(self, epoch):
         sample_grid = generate_sample_images(
