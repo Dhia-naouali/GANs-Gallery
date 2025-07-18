@@ -2,6 +2,9 @@ import torch
 from torch import optim
 from torch.amp import GradScaler, autocast
 
+torch.backends.cudnn.benchmark = True 
+torch.backends.cudnn.deterministic = False
+
 import os
 import time
 import hydra
@@ -37,7 +40,7 @@ class Trainer:
         setup_directories(self.config)
 
         self.G, self.D = setup_models(config.model)
-        self.G.to(self.device); self.D.to(self.device)
+        self.G.to(self.device, memory_format=torch.channels_last); self.D.to(self.device, memory_format=torch.channels_last)
 
         # proper weights_init (muP ?)
 
@@ -163,7 +166,7 @@ class Trainer:
             fake_acc = (torch.tanh(fake_logits) < 0).float().mean().item()
             real_acc = (torch.tanh(real_logits) > 0).float().mean().item()
 
-        return D_loss, fake_acc, real_acc
+        return D_loss.item(), fake_acc, real_acc
 
     def G_train_step(self, noise):
         self.G.zero_grad()
@@ -177,7 +180,7 @@ class Trainer:
         self.G_scaler.step(self.G_optimizer)
         self.G_scaler.update()
         
-        return G_loss
+        return G_loss.item()
 
 
     def train_epoch(self, epoch, epochs):
@@ -189,13 +192,10 @@ class Trainer:
         pbar = tqdm(self.dataloader, desc=f"Epoch {epoch}/{epochs}: ")
 
         for batch_idx, real_images in enumerate(pbar):
-            real_images = real_images.to(self.device)
+            real_images = real_images.to(self.device, memory_format=torch.channels_last)
             step_metrics = self.train_step(real_images)
             self.tracker.log(step_metrics, batch_idx, pbar=pbar)
             
-            del real_images, step_metrics
-            torch.cuda.empty_cache()            
-
         return {**self.tracker.averages(), "epoch_time": time.time() - start_time}
 
 
@@ -231,9 +231,6 @@ class Trainer:
         
         sample_path = os.path.join(self.config.sample_dir, f"epoch_{epoch:04d}.png")
         save_sample_images(sample_grid, sample_path, nrows=4)
-        
-        del sample_grid
-        torch.cuda.empty_cache()
         
         # set back to train mode since it could be called mid training
         self.G.train()
