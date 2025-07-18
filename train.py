@@ -12,7 +12,7 @@ from src.utils import (
     seed_all,
     setup_directories,
     count_params,
-    Scheduler,
+    setup_scheduler,
     CheckpointManager,
 )
 from src.models import setup_models
@@ -45,12 +45,13 @@ class Trainer:
         print(f"Generator: {count_params(self.G) * 1e-6:.2f} \n"
               f"Discriminator: {count_params(self.D) * 1e-6:.2f}")
         
-        self.setup_optimizers()
-        self.setup_loss_and_regs()
 
         self.dataloader = setup_dataloader(
             config
         )
+
+        self.setup_optimizers()
+        self.setup_loss_and_regs()
 
         if config.ADA.use_ADA:
             self.ada = AdaptiveDiscriminatorAugmentation(
@@ -75,8 +76,8 @@ class Trainer:
     def setup_optimizers(self):
         config = self.config.optimizer
 
-        G_lr = config.G_lr
-        D_lr = config.D_lr
+        G_lr = self.config.optimizer.G_lr
+        D_lr = self.config.optimizer.D_lr
         # D_lr = config.D_lr if D_lr in config else G_lr / config.
 
         self.G_optimizer = optim.AdamW(
@@ -99,8 +100,8 @@ class Trainer:
             weight_decay=config.weight_decay,
         )
 
-        self.G_scheduler = Scheduler(self.G_optimizer, config)
-        self.D_scheduler = Scheduler(self.D_optimizer, config)
+        self.G_scheduler = setup_scheduler(self.G_optimizer, len(self.dataloader), self.config)
+        self.D_scheduler = setup_scheduler(self.D_optimizer, len(self.dataloader), self.config)
 
 
     def setup_loss_and_regs(self):
@@ -130,6 +131,8 @@ class Trainer:
         if self.ada:
             self.ada.update(real_acc)
 
+        self.G_scheduler.step()
+        self.D_scheduler.step()
         return {
             "G_loss": G_loss,
             "D_loss": D_loss,

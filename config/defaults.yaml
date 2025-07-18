@@ -2,6 +2,7 @@ defaults:
   - model: gan
   - data: afhq
   - optimizer: adamw
+  - scheduler: warm_up_linear
   - wandb: default
   - _self_
 
