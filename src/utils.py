@@ -56,7 +56,7 @@ class Scheduler(optim.lr_scheduler._LRScheduler):
     FREQ = {
         "warm_up_cosine": PER_STEP,
         "warm_up_linear": PER_STEP,
-        "step": PER_EPOCH,
+        "step_decay": PER_EPOCH,
         "constant": PER_EPOCH, # will be ignored :'(
     }
 
@@ -128,8 +128,8 @@ class WarmUpCosine(Scheduler):
         return lrs
 
 
-class Step(Scheduler):
-    NAME = "step"
+class StepDecay(Scheduler):
+    NAME = "step_decay"
     def __init__(self, optimizer, total_steps, config):
         self.update_freq = config.get("update_freq", 1)
         self.gamma = config.get("gamma", .98)
