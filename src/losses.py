@@ -73,7 +73,7 @@ class WGANGPLoss(Loss):
 
 class RelavisticAverageGANLoss:
     def __init__(self):
-        self.criterion = nn.BCEWithLigtsLoss()
+        self.criterion = nn.BCEWithLogitsLoss()
 
     def generator_loss(self, fake_logits, real_logits):
         real_loss = self.criterion(
