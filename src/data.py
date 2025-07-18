@@ -71,7 +71,7 @@ class AdaptiveDiscriminatorAugmentation:
             A.VerticalFlip(.1),
             A.Rotate(10),
             A.ColorJitter(brightness=.2, contrast=.2, saturation=.2, hue=.1),
-            A.Affine(degrees=0, translate_percent=(.1, .1), scale=(.9, 1.1)),
+            A.Affine(translate_percent=(.1, .1), scale=(.9, 1.1)),
             A.Normalize(mean=(.5, .5, .5), std=(.5, .5, .5)),
             ToTensor(),
         ])
@@ -96,7 +96,7 @@ class AdaptiveDiscriminatorAugmentation:
                 image = (
                     ((image * .5) + .5) * 255
                 ).astype(np.uint8)
-                image = self.transform(image=image)["image"].to(device)
+                image = self.transform(image=image)["image"].to(device, non_blocking=True)
             aug_images.append(image)
 
         return torch.stack(aug_images)

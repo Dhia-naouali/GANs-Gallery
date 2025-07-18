@@ -8,12 +8,12 @@ defaults:
 
 
 training:
-  epochs: 160
+  epochs: 120
   batch_size: 16
   image_size: 256
   pin_memory: true
   compile: true
-  save_every: 1
+  save_every: 40
   sample_every: 1
   eval_every: 1
   beta1: 0.5
