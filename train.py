@@ -15,6 +15,8 @@ from src.utils import (
     setup_scheduler,
     MetricsTracker,
     CheckpointManager,
+    generate_sample_images,
+    save_sample_images,
 )
 from src.models import setup_models
 from src.data import setup_dataloader, AdaptiveDiscriminatorAugmentation
@@ -212,7 +214,15 @@ class Trainer:
 
 
     def generate_samples(self, epoch):
-        ...
+        sample_grid = generate_sample_images(
+            self.G,
+            num_samples=32,
+            lat_dim=self.config.model.lat_dim,
+            device=self.device
+        )
+
+        sample_path = os.path.join(self.config.sample_dir, f"epoch_{epoch:04d}.png")
+        save_sample_images(sample_grid, sample_path, nrows=4)
 
 
 

@@ -30,15 +30,18 @@ def generate_sample_images(
         generator, # EMA primarily
         num_samples=16,
         lat_dim=None, # yet to be selected
-        path=".",
-        rows=4,
     ):
     generator.eval()
     device = next(generator.parameters()).device
     
     noise = torch.randn(num_samples, lat_dim, device=device)
     fake_images = .5 * (generator(noise) + 1)
-    save_image(fake_images, path, nrow=rows)
+    return fake_images
+
+
+def save_smaple_images(images, path, rows=4):
+    images = (images + 1) / 2
+    save_image(images, path, rows)
 
 
 def setup_directories(config):
@@ -87,7 +90,6 @@ class Scheduler(optim.lr_scheduler._LRScheduler):
         if self.last_epoch < self.warm_up_steps:
             return self.last_epoch / max(1, self.warm_up_steps)
         return None
-
 
 
 class WarmUpCosineScheduler(Scheduler):
@@ -164,12 +166,10 @@ class StepDecayScheduler(Scheduler):
         return lrs
 
 
-
 class ConstantScheduler(Scheduler):
     NAME = "constant"
     def __init__(self, optimizer, total_steps, config):
         super().__init__(optimizer)
-
 
 
 SCHEDULERS = {
@@ -186,7 +186,6 @@ def setup_scheduler(optimizer, total_steps, config):
 
 
 class MetricsTracker:
-
     class Metric:
         def __init__(self, name):
             self.name = name
