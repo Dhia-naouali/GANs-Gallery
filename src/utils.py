@@ -1,8 +1,12 @@
 import os
 import random
 import numpy as np
-import torch
+
 import wandb # I should get a wandb sticker
+import inspect
+
+import torch
+from torch import optim
 from torchvision.utils import save_image
 
 def seed_all(seed=12):
@@ -52,9 +56,32 @@ def setup_directories(config):
         os.makedirs(dir, exist_ok=True)
 
 
-class Scheduler:
-    def __init__(self, *args):
-        ...
+
+class Scheduler(optim.lr_scheduler._LRScheduler):
+    PER_STEP = object()
+    PER_EPOCH = object()
+    FREQ = {
+        "warm_up_cosine": PER_STEP,
+        "warmp_up_linear": PER_STEP,
+        "step": PER_EPOCH,
+        "constant": PER_EPOCH, # will be ignored :'(
+    }
+
+    def __init__(self, optimizer, total_steps, config):
+        super().__init__(optimizer, last_epoch=-1)
+
+    def take_step(self):
+        if (
+            self.FREQ[self.name] == self.PER_STEP and 
+            inspect.stack()[1].function == "train_step"
+        ) or (
+            self.FREQ[self.name] == self.PER_EPOCH and 
+            inspect.stack()[1].function == "train_epoch"
+        ):
+            return False
+        return True
+
+
 
 class CheckpointManager:
     def __init__(self, *args):
