@@ -20,7 +20,7 @@ training:
   beta2: 0.9
 
 loss:
-  criterion: bce
+  criterion: ragan
   lambda_gp: 10
 
 
