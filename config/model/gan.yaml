@@ -11,5 +11,5 @@ generator:
   attention_layers: 
 
 discriminator: 
-  hidden_eim: 256
+  hidden_dim: 256
   depth: 5
