@@ -239,8 +239,16 @@ class Trainer:
 @hydra.main(config_path="config", config_name="defaults.yaml", version_base=None)
 def main(config):
     print(OmegaConf.to_yaml(config))
-    print("\n"*8)
+    print("\n"*4)
+    wandb.init(
+        project="GANs",
+        name=f"GAN_run_{int(time.time())}",
+        config=OmegaConf.to_container(config, resolve=True),
+        reinit=True
+    )
     Trainer(config).train()
+    if wandb.run is not None:
+        wandb.finish()
 
 
 if __name__ == "__main__":
