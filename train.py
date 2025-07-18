@@ -13,6 +13,7 @@ from src.utils import (
     setup_directories,
     count_params,
     setup_scheduler,
+    MetricsTracker,
     CheckpointManager,
 )
 from src.models import setup_models
@@ -68,6 +69,7 @@ class Trainer:
         #     ...
         # )
 
+        self.tracker = MetricsTracker(log_freq=self.config.wandb.log_freq)
 
         self.NOISE = torch.randn(32, self.config.model.lat_dim, device=self.device)
 
@@ -181,27 +183,17 @@ class Trainer:
     def train_epoch(self, epoch, epochs):
         self.G.train()
         self.D.train()
+        self.tracker.reset()
 
-        pbar = tqdm(self.dataloader, desc=f"[Epoch {epoch}/{epochs}]: ")
+        pbar = tqdm(self.dataloader, desc=f"Epoch {epoch}/{epochs}: ")
 
         for batch_idx, real_images in enumerate(pbar):
             real_images = real_images.to(self.device)
             step_metrics = self.train_step(real_images)
+            self.tracker.log(step_metrics, batch_idx, pbar=pbar, wandb_=True)
 
-            pbar.set_postfix({
-                k: f"{step_metrics[k]:.4f}" 
-                for k in ["G_loss", "D_loss", "fake_acc", "real_acc"]
-            })
+        return self.tracker.averages()
 
-            if wandb.run is not None and not batch_idx % self.config.wandb.log_freq:
-                wandb.log({
-                    f"train/{k}": step_metrics[k] for k in ["G_loss", "D_loss", "fake_acc", "real_acc"]
-                })
-
-        return {
-
-        }
-    
 
     def train(self):
         # main training loop script
@@ -209,7 +201,6 @@ class Trainer:
             start_time = time.time()
             epoch_metrics = self.train_epoch(epoch, self.config.training.epochs)
 
-            # if scheduler per epoch
             self.G_scheduler.step(epoch_call=True)
             self.D_scheduler.step(epoch_call=True)
 
@@ -218,19 +209,6 @@ class Trainer:
 
             if not epoch % self.config.training.save_every:
                 self.checkpoint_manager.save_checkpoint()
-
-            # if wandb.run:
-            #     wandb.log({
-            #         "epoch/G_loss": epoch_metrics["G_loss"],
-            #         "epoch/D_loss": epoch_metrics["D_loss"],
-            #         "epoch/real_acc": epoch_metrics["real_acc"],
-            #         "epoch/fake_acc": epoch_metrics["fake_acc"],
-            #         "epoch/time": time.time() - start_time,
-            #         "dpoch": epoch,
-            #     })
-
-            
-
 
 
     def generate_samples(self, epoch):

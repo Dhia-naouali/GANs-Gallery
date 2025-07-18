@@ -184,6 +184,57 @@ def setup_scheduler(optimizer, total_steps, config):
     return SCHEDULERS[config.scheduler.name](optimizer, total_steps, config.scheduler)
 
 
+
+class MetricsTracker:
+
+    class Metric:
+        def __init__(self, name):
+            self.name = name
+
+        def reset(self):
+            self.val = 0
+            self.avg = 0
+            self.sum = 0
+            self.count = 0
+
+        def update(self, new_val):
+            self.val = new_val
+            self.count += 1
+            self.sum += new_val
+            self.avg = self.sum / self.count
+
+
+    names = ["G_loss", "D_loss", "fake_acc", "real_acc"]
+    def __init__(self, log_freq):
+        self.log_freq = log_freq
+        self.tracked_metrics = {name: self.Metric(name) for name in self.names}
+
+
+    def log(self, metrics, batch_idx, pbar=None):
+        for name in self.names:
+            self.tracked_metrics[name].update(metrics[name])
+
+        if pbar:
+            pbar.set_postfix({
+                k: f"{metrics[k]:.4f}" 
+                for k in self.tracked_metrics
+            })
+
+        if not batch_idx % self.log_freq and wandb.run is not None:
+            wandb.log({
+                f"train/{k}": metrics[k] for k in self.tracked_metrics
+            })
+
+    def averages(self):
+        return {
+            metric.avg for metric in self.tracked_metrics
+        }
+
+    def reset(self):
+        for metric in self.tracked_metrics:
+            metric.reset()
+
+
 class CheckpointManager:
     def __init__(self, *args):
         ...
