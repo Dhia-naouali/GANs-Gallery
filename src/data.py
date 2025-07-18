@@ -99,8 +99,6 @@ class AdaptiveDiscriminatorAugmentation:
             aug_images.append(image)
 
         return torch.stack(aug_images)
-    
-
 
 
 def setup_dataloader(config):
@@ -121,8 +119,3 @@ def setup_dataloader(config):
     )
 
     return dataloader
-
-# images to track ADA
-def save_smaples(images, path, rows=4):
-    images = (images + 1) / 2
-    save_image(images, path, rows)
