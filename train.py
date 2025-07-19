@@ -129,10 +129,10 @@ class Trainer:
         noise = torch.randn(bs, self.config.model.lat_dim, device=self.device)
 
         # D step
-        D_loss, real_acc, fake_acc, real_logits = self.D_train_step(real_images, noise)
+        D_loss, real_acc, fake_acc, real_logits = self.D_train_step(noise, real_images)
 
         # G step
-        G_loss = self.G_train_step(noise, real_logits)
+        G_loss = self.G_train_step(noise, real_logits.detach())
 
         if self.ada:
             self.ada.update(real_acc)
@@ -147,7 +147,7 @@ class Trainer:
         }
 
 
-    def D_train_step(self, real_images, noise):
+    def D_train_step(self, noise, real_images):
         self.D.zero_grad()
         with autocast(device_type=self.device.type):
             real_images.requires_grad_(True)
@@ -240,12 +240,12 @@ class Trainer:
 def main(config):
     print(OmegaConf.to_yaml(config))
     print("\n"*4)
-    wandb.init(
-        project="GANs",
-        name=f"GAN_run_{int(time.time())}",
-        config=OmegaConf.to_container(config, resolve=True),
-        reinit=True
-    )
+    # wandb.init(
+    #     project="GANs",
+    #     name=f"GAN_run_{int(time.time())}",
+    #     config=OmegaConf.to_container(config, resolve=True),
+    #     reinit=True
+    # )
     Trainer(config).train()
     if wandb.run is not None:
         wandb.finish()
