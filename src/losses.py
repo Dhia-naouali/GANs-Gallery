@@ -35,17 +35,17 @@ class BCELoss(Loss):
     
 
 class WGANGPLoss(Loss):
-    def __init__(self, lambda_gp=10, D=None):
+    def __init__(self, config, lambda_gp=10, D=None):
         self.lambda_ = lambda_gp
-        self.D # a reference to the Discriminator
+        self.D = D# a reference to the Discriminator
 
-    def generator_loss(self, fake_logits):
+    def generator_loss(self, fake_logits, real_logits):
         return -fake_logits.mean()
 
     def discriminator_loss(self, fake_logits, real_logits):
         return - fake_logits.mean() + real_logits.mean()
     
-    def gradient_penalty(self, D, fake_samples, real_samples):
+    def gradient_penalty(self, fake_samples, real_samples):
         bs = real_samples.size(0)
         device = real_samples.device
 
@@ -53,7 +53,7 @@ class WGANGPLoss(Loss):
         interpolated_x = alpha * real_samples + (1 - alpha) * fake_samples
         interpolated_x.requires_grad_(True)
 
-        interpolated_logits = D(interpolated_x)
+        interpolated_logits = self.D(interpolated_x)
 
         grads = autograd.grad(
             outputs=interpolated_logits,
@@ -64,15 +64,15 @@ class WGANGPLoss(Loss):
             retain_graph=True, # in case using some of the other regs
         )[0]
 
-        grads = grads.view(bs, -1)
+        grads = grads.reshape(bs, -1)
         grad_norm = grads.norm(2, dim=1)
         return self.lambda_ * ((grad_norm - 1) ** 2).mean()
     
 
 
 
-class RelavisticAverageGANLoss:
-    def __init__(self):
+class RelavisticAverageGANLoss(Loss):
+    def __init__(self, config):
         self.criterion = nn.BCEWithLogitsLoss()
 
     def generator_loss(self, fake_logits, real_logits):
@@ -106,16 +106,21 @@ class RelavisticAverageGANLoss:
 
 LOSSES = {
     "bce": BCELoss,
-    "wgan-gp": WGANGPLoss,
+    "wgan_gp": WGANGPLoss,
     "ragan": RelavisticAverageGANLoss
 }
-
-def setup_criterion(config):
-    # temp
-    return LOSSES[config.get("criterion", "bce")]()
     
 
-class R1R2Regularizer:
+
+
+def setup_loss(config, D=None):
+    if config.criterion == "wgan_gp":
+        return LOSSES[config.get("criterion", "bce")](config, D=D)
+    return LOSSES[config.get("criterion", "bce")](config)
+
+
+# sorry r2 gotta got, turns out it's that stable, and since the penalty introduction only r1 been around
+class R1Regularizer:
     def __init__(self, lambda_r1=10):
         self.lambda_ = lambda_r1
 
@@ -123,13 +128,10 @@ class R1R2Regularizer:
         fake_samples.require_grad_(True)
         real_samples.require_grad_(True)
 
-        return self.lambda_ * (
-            .5 * self.r_gp(fake_logits, fake_samples) +
-            .5 * self.r_gp(real_logits, real_samples)
-        )
+        return self.lambda_ * self.r2_gp(real_logits, real_samples)
 
 
-    def r_gp(self, logits, samples):
+    def r2_gp(self, logits, samples):
         grads = autograd.grad(
             outputs=logits,
             inputs=samples,

@@ -106,7 +106,7 @@ def setup_dataloader(config):
 
     dataset = CarsDataset(
         root_dir = config.data.get("root_dir", "data/afhq/cat"),
-        image_size = config.data.get("image_size", 256),
+        image_size = config.training.get("image_size", config.data.get("image_size", 256)),
         augmentations = config.data.get("augmentations", {})
     )
 

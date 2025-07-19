@@ -24,12 +24,12 @@ from src.utils import (
 )
 from src.models import setup_models
 from src.data import setup_dataloader, AdaptiveDiscriminatorAugmentation
-from src.losses import setup_criterion
+from src.losses import setup_loss
 
 
 class Trainer:
     def __init__(self, config):
-        # regulizers
+        # regularizers
         # compile ?
 
 
@@ -111,12 +111,10 @@ class Trainer:
 
 
     def setup_loss_and_regs(self):
-        self.criterion = setup_criterion(
+        self.criterion = setup_loss(
             self.config.loss,
+            D=self.D if self.config.loss.criterion == "wgan_gp" else None
         )
-
-        self.regs = {}
-
 
 
     def train_step(self, real_images):
@@ -156,8 +154,10 @@ class Trainer:
             with torch.no_grad():
                 fake_images = self.G(noise).detach()
             fake_logits = self.D(fake_images)
-
+            
             D_loss = self.criterion.discriminator_loss(fake_logits, real_logits)
+            if self.config.loss.criterion == "wgan_gp":
+                D_loss += self.criterion.gradient_penalty(fake_images, real_images)
         
         self.D_scaler.scale(D_loss).backward()
         self.D_scaler.step(self.D_optimizer)
@@ -240,12 +240,12 @@ class Trainer:
 def main(config):
     print(OmegaConf.to_yaml(config))
     print("\n"*4)
-    # wandb.init(
-    #     project="GANs",
-    #     name=f"GAN_run_{int(time.time())}",
-    #     config=OmegaConf.to_container(config, resolve=True),
-    #     reinit=True
-    # )
+    wandb.init(
+        project="GANs",
+        name=f"GAN_run_{int(time.time())}",
+        config=OmegaConf.to_container(config, resolve=True),
+        reinit=True
+    )
     Trainer(config).train()
     if wandb.run is not None:
         wandb.finish()

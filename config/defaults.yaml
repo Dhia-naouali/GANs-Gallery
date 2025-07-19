@@ -20,8 +20,14 @@ training:
   beta2: 0.9
 
 loss:
-  criterion: ragan
+  criterion: wgan_gp
   lambda_gp: 10
+
+
+regularizers:
+  gradient_penalty: 0.0
+  path_length_penalty: 0.0
+  r1_penalty: 0.0
 
 
 seed: 12
