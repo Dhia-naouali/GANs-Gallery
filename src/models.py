@@ -135,7 +135,7 @@ class GANG(nn.Module):
         self.lat_dim = lat_dim
         self.attention_layers = attention_layers or []
 
-        self.init_size = 4
+        self.init_size = 8
         init_channels  = hidden_dim * (2**(depth-1))
 
         self.projector = nn.Linear(lat_dim, init_channels * (self.init_size**2))
