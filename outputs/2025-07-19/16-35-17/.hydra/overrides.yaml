@@ -1,0 +1,3 @@
+- data.root_dir=/kaggle/input/animal-faces/afhq/train/cat
+- model.generator.hidden_dim=128
+- model.discriminator.hidden_dim=128
