@@ -1,7 +1,6 @@
 import torch
 from torch import optim
 from torch.amp import GradScaler, autocast
-from torchvision.utils import make_grid
 
 torch.backends.cudnn.benchmark = True 
 torch.backends.cudnn.deterministic = False
@@ -135,8 +134,8 @@ class Trainer:
         if self.ada:
             self.ada.update(real_acc)
 
-        self.G_scheduler.step()
-        self.D_scheduler.step()
+        # self.G_scheduler.step()
+        # self.D_scheduler.step()
         return {
             "G_loss": G_loss,
             "D_loss": D_loss,
@@ -205,8 +204,8 @@ class Trainer:
         for epoch in range(1, self.config.training.epochs + 1):
             epoch_metrics = self.train_epoch(epoch, self.config.training.epochs)
 
-            self.G_scheduler.step(epoch_call=True)
-            self.D_scheduler.step(epoch_call=True)
+            # self.G_scheduler.step(epoch_call=True)
+            # self.D_scheduler.step(epoch_call=True)
 
             if not epoch % self.config.training.sample_every:
                 self.generate_samples(epoch)
@@ -230,11 +229,7 @@ class Trainer:
         
         sample_path = os.path.join(self.config.sample_dir, f"epoch_{epoch:04d}.png")
         save_sample_images(sample_grid, sample_path, rows=4)
-
-        wandb.log({f"sample_{epoch:03f}": wandb.Image(
-            make_grid(sample_grid, nrow=4, normalize=True, value_range=(0, 1))
-
-        )})
+        wandb.log({f"sample_{epoch:03f}": wandb.Image(sample_grid)})
         self.G.train()
 
 
@@ -243,7 +238,6 @@ def main(config):
     print(OmegaConf.to_yaml(config))
     print("\n"*4)
     wandb.init(
-        # entity="dhia12naouali",
         project="GANs",
         name=f"GAN_run_{int(time.time())}",
         config=OmegaConf.to_container(config, resolve=True),
