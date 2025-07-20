@@ -15,6 +15,7 @@ the aim of this project is to create more of'em
 
 
 ### Base Model
+(all kinda smudges, few actual cats)
 ```bash
 python train.py training.epochs=160 optimizer.D_lr=8e-5 optimizer.G_lr=12e-5
 ```
