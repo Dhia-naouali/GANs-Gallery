@@ -5,6 +5,8 @@ from torch.amp import GradScaler, autocast
 torch.backends.cudnn.benchmark = True 
 torch.backends.cudnn.deterministic = False
 
+from torchvision.utils import make_grid
+
 import os
 import time
 import hydra
@@ -229,7 +231,7 @@ class Trainer:
         
         sample_path = os.path.join(self.config.sample_dir, f"epoch_{epoch:04d}.png")
         save_sample_images(sample_grid, sample_path, rows=4)
-        wandb.log({f"sample_{epoch:03f}": wandb.Image(sample_grid)})
+        wandb.log({f"sample_{epoch:03f}": wandb.Image(make_grid(sample_grid, nrow=4, normalize=True, value_range=(0, 1)))})
         self.G.train()
 
 
