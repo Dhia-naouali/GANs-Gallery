@@ -283,7 +283,6 @@ def setup_models(config):
 
     specific=config.discriminator
     discriminator_config = {
-        "lat_dim": retrieve("lat_dim", 128),
         "hidden_dim": retrieve("hidden_dim", 32),
         "depth": retrieve("depth", 6),
         "norm": retrieve("norm", None),
