@@ -243,6 +243,7 @@ def main(config):
     print(OmegaConf.to_yaml(config))
     print("\n"*4)
     wandb.init(
+        entity="dhia12naouali",
         project="GANs",
         name=f"GAN_run_{int(time.time())}",
         config=OmegaConf.to_container(config, resolve=True),
