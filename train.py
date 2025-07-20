@@ -223,8 +223,7 @@ class Trainer:
         
         sample_grid = generate_sample_images(
             self.G,
-            num_samples=32,
-            lat_dim=self.config.model.lat_dim,
+            self.NOISE
         )
 
         
