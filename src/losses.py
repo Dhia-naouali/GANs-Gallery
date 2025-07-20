@@ -15,7 +15,7 @@ class Loss:
 
 
 class BCELoss(Loss):
-    def __init__(self, label_smoothing=0.):
+    def __init__(self, config, label_smoothing=0.):
         super().__init__()
         self.criterion = nn.BCEWithLogitsLoss()
         self.label_smoothing = label_smoothing
