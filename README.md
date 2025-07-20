@@ -12,3 +12,9 @@ the aim of this project is to create more of'em
   <img src="data/download.jpg" width="640"><br>
   <em>admire the stars morty (none atm)</em>
 </p>
+
+
+### Base Model
+```bash
+python train.py training.epochs=160 optimizer.D_lr=8e-5 optimizer.G_lr=12e-5
+```
