@@ -18,6 +18,7 @@ training:
   eval_every: 1
   beta1: 0.5
   beta2: 0.9
+  n_critic: 1
 
 loss:
   criterion: bce

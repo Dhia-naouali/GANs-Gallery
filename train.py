@@ -55,9 +55,9 @@ class Trainer:
             config
         )
 
+        self.n_critic = self.config.training.get("n_critic", 1)
         self.setup_optimizers()
         self.setup_loss_and_regs()
-        self.n_critic = self.config.training.get("n_critic", 1)
 
 
         self.ada = AdaptiveDiscriminatorAugmentation(
@@ -108,7 +108,7 @@ class Trainer:
 
         total_steps = len(self.dataloader) * len(self.dataloader.dataset)
         self.G_scheduler = setup_scheduler(self.G_optimizer, total_steps, self.config)
-        self.D_scheduler = setup_scheduler(self.D_optimizer, total_steps, self.config)
+        self.D_scheduler = setup_scheduler(self.D_optimizer, total_steps * self.n_critic, self.config)
 
 
     def setup_loss_and_regs(self):
@@ -119,26 +119,26 @@ class Trainer:
 
 
     def train_step(self, real_images):
-        # called from train_epoch: G & D in train mode
+        # safe to have out of the loop as long as we're using drop_last in the loader
         bs = real_images.size(0)
+        
+        for _ in range(self.n_critic):
+            noise = torch.randn(bs, self.config.model.lat_dim, device=self.device)
+            # using the same samples for multiple D steps, at least let's introduce some augs
+            if self.ada:
+                real_images = self.ada(real_images)
 
-        if self.ada:
-            real_images = self.ada(real_images)
+            D_loss, real_acc, fake_acc, real_logits = self.D_train_step(noise, real_images)
+
+            if self.ada:
+                self.ada.update(real_acc)
+
+            self.D_scheduler.step()
         
         noise = torch.randn(bs, self.config.model.lat_dim, device=self.device)
-
-        # D step
-        D_loss, real_acc, fake_acc, real_logits = self.D_train_step(noise, real_images)
-
-        # G step
-        noise = torch.randn(bs, self.config.model.lat_dim, device=self.device)
         G_loss = self.G_train_step(noise, real_logits.detach())
-
-        if self.ada:
-            self.ada.update(real_acc)
-
         self.G_scheduler.step()
-        self.D_scheduler.step()
+
         return {
             "G_loss": G_loss,
             "D_loss": D_loss,
