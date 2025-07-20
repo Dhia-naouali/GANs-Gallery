@@ -28,13 +28,9 @@ def count_params(model, trainable_only=False):
 @torch.no_grad
 def generate_sample_images(
         generator, # EMA primarily
-        num_samples=16,
-        lat_dim=None, # yet to be selected
+        noise,
     ):
     generator.eval()
-    device = next(generator.parameters()).device
-    
-    noise = torch.randn(num_samples, lat_dim, device=device)
     fake_images = .5 * (generator(noise) + 1)
     return fake_images
 

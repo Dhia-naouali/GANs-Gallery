@@ -37,7 +37,9 @@ class _Conv(nn.Module):
     NORMS = {
         "batch": nn.BatchNorm2d,
         "layer": nn.LayerNorm,
-        "instance": nn.InstanceNorm2d
+        "instance": nn.InstanceNorm2d,
+        "pixel": PixelNorm,
+        None: nn.Identity
     }
     
     def __init__(self, conv, out_channels, norm, activation, leak, use_SN):
@@ -135,10 +137,14 @@ class GANG(nn.Module):
         self.lat_dim = lat_dim
         self.attention_layers = attention_layers or []
 
-        self.init_size = 8
+        self.init_size = 4
         init_channels  = hidden_dim * (2**(depth-1))
 
-        self.projector = nn.Linear(lat_dim, init_channels * (self.init_size**2))
+        self.projector = nn.Sequential(
+            nn.Linear(lat_dim, init_channels * (self.init_size**2)),
+            nn.BatchNorm1d(init_channels * (self.init_size**2)),
+            nn.ReLU(inplace=True)
+        )
 
         block_kwargs = {
             "kernel_size":4,
@@ -253,37 +259,44 @@ class GAND(nn.Module):
         return x
 
 def setup_models(config):
-    lat_dim = config.get("lat_dim", 128)
-    norm = config.get("norm", "batch")
-    spectral_norm = config.get("spectral_norm", False)
-    self_attention = config.get("self_attention", False)
-    activation = config.get("activation", "elu")
-    leak = config.get("leak", .1)
+    def retrieve(param, default):
+        return specific.get(param, config.get(param, default))
     
-    G_config = config.get("generator", {})
+
+    specific=config.generator
+    generator_config = {
+        "lat_dim": retrieve("lat_dim", 128),
+        "hidden_dim": retrieve("hidden_dim", 32),
+        "depth": retrieve("depth", 6),
+        "norm": retrieve("norm", "batch"),
+        "activation": retrieve("activation", "elu"),
+        "leak": retrieve("leak", 0.1),
+        "use_SA": retrieve("use_SA", False),
+        "use_SN": retrieve("use_SN", False),
+        "attention_layers": None
+    }
+
     generator = GANG(
-        lat_dim=lat_dim,
-        hidden_dim=G_config.get("hidden_dim", 128),
-        depth=G_config.get("depth", 4),
-        norm=norm,
-        activation=activation,
-        leak=leak,
-        use_SA=self_attention,
-        use_SN=spectral_norm,
-        attention_layers=None
+        **generator_config
     )
 
 
-    D_config = config.get("discriminator", {})
+    specific=config.discriminator
+    discriminator_config = {
+        "lat_dim": retrieve("lat_dim", 128),
+        "hidden_dim": retrieve("hidden_dim", 32),
+        "depth": retrieve("depth", 6),
+        "norm": retrieve("norm", None),
+        "activation": retrieve("activation", "elu"),
+        "leak": retrieve("leak", 0.1),
+        "use_SA": retrieve("use_SA", False),
+        "use_SN": retrieve("use_SN", False),
+        "attention_layers": None
+    }
+
+
     descriminator = GAND(
-        hidden_dim=D_config.get("hidden_dim", 128),
-        depth=D_config.get("depth", 4),
-        norm=norm,
-        activation=activation,
-        leak=leak,
-        use_SA=self_attention,
-        use_SN=spectral_norm,
-        attention_layers=None
+        **discriminator_config
     )
 
     return generator, descriminator

@@ -9,7 +9,7 @@ defaults:
 
 training:
   epochs: 120
-  batch_size: 16
+  batch_size: 32
   image_size: 256
   pin_memory: true
   compile: true
@@ -20,7 +20,7 @@ training:
   beta2: 0.9
 
 loss:
-  criterion: wgan_gp
+  criterion: bce
   lambda_gp: 10
 
 

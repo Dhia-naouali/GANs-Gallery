@@ -40,6 +40,7 @@ class Trainer:
         setup_directories(self.config)
 
         self.G, self.D = setup_models(config.model)
+        print(self.G, self.D)
         self.G.to(self.device, memory_format=torch.channels_last); self.D.to(self.device, memory_format=torch.channels_last)
 
         # proper weights_init (muP ?)
@@ -74,7 +75,7 @@ class Trainer:
 
         self.tracker = MetricsTracker(log_freq=self.config.wandb.log_freq)
 
-        self.NOISE = torch.randn(32, self.config.model.lat_dim, device=self.device)
+        self.NOISE = torch.randn(16, self.config.model.lat_dim, device=self.device)
 
         
 
@@ -85,24 +86,22 @@ class Trainer:
         D_lr = self.config.optimizer.D_lr
         # D_lr = config.D_lr if D_lr in config else G_lr / config.
 
-        self.G_optimizer = optim.AdamW(
+        self.G_optimizer = optim.Adam(
             self.G.parameters(),
             lr=G_lr,
             betas=(
                 self.config.training.beta1,
                 self.config.training.beta2
                 ),
-            weight_decay=config.weight_decay,
         )
 
-        self.D_optimizer = optim.AdamW(
+        self.D_optimizer = optim.Adam(
             self.D.parameters(),
             lr=D_lr,
             betas=(
                 self.config.training.beta1,
                 self.config.training.beta2
                 ),
-            weight_decay=config.weight_decay,
         )
 
         total_steps = len(self.dataloader) * len(self.dataloader.dataset)
@@ -231,8 +230,7 @@ class Trainer:
         
         sample_path = os.path.join(self.config.sample_dir, f"epoch_{epoch:04d}.png")
         save_sample_images(sample_grid, sample_path, rows=4)
-        
-        # set back to train mode since it could be called mid training
+        wandb.log({f"sample_{epoch:03f}": wandb.Image(sample_grid)})
         self.G.train()
 
 
