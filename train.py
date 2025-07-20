@@ -134,8 +134,8 @@ class Trainer:
         if self.ada:
             self.ada.update(real_acc)
 
-        # self.G_scheduler.step()
-        # self.D_scheduler.step()
+        self.G_scheduler.step()
+        self.D_scheduler.step()
         return {
             "G_loss": G_loss,
             "D_loss": D_loss,
@@ -204,8 +204,8 @@ class Trainer:
         for epoch in range(1, self.config.training.epochs + 1):
             epoch_metrics = self.train_epoch(epoch, self.config.training.epochs)
 
-            # self.G_scheduler.step(epoch_call=True)
-            # self.D_scheduler.step(epoch_call=True)
+            self.G_scheduler.step(epoch_call=True)
+            self.D_scheduler.step(epoch_call=True)
 
             if not epoch % self.config.training.sample_every:
                 self.generate_samples(epoch)
