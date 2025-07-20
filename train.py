@@ -57,6 +57,7 @@ class Trainer:
 
         self.setup_optimizers()
         self.setup_loss_and_regs()
+        self.n_critic = self.config.training.get("n_critic", 1)
 
 
         self.ada = AdaptiveDiscriminatorAugmentation(
@@ -76,7 +77,6 @@ class Trainer:
         )
 
         self.tracker = MetricsTracker(log_freq=self.config.wandb.log_freq)
-
         self.NOISE = torch.randn(16, self.config.model.lat_dim, device=self.device)
 
         
@@ -131,6 +131,7 @@ class Trainer:
         D_loss, real_acc, fake_acc, real_logits = self.D_train_step(noise, real_images)
 
         # G step
+        noise = torch.randn(bs, self.config.model.lat_dim, device=self.device)
         G_loss = self.G_train_step(noise, real_logits.detach())
 
         if self.ada:
