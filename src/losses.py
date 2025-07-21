@@ -61,7 +61,7 @@ class WGANGPLoss(Loss):
             grad_outputs=torch.ones_like(interpolated_logits),
             create_graph=True,
             only_inputs=True,
-            retain_graph=False,
+            retain_graph=True,
         )[0]
 
         grads = grads.reshape(bs, -1)
