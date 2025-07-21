@@ -49,7 +49,7 @@ class WGANGPLoss(Loss):
         bs = real_samples.size(0)
         device = real_samples.device
 
-        alpha = torch.randn(bs, 1, 1, 1, device=device)
+        alpha = torch.rand(bs, 1, 1, 1, device=device)
         interpolated_x = alpha * real_samples + (1 - alpha) * fake_samples
         interpolated_x.requires_grad_(True)
 
@@ -61,7 +61,7 @@ class WGANGPLoss(Loss):
             grad_outputs=torch.ones_like(interpolated_logits),
             create_graph=True,
             only_inputs=True,
-            retain_graph=True, # in case using some of the other regs
+            retain_graph=False,
         )[0]
 
         grads = grads.reshape(bs, -1)
