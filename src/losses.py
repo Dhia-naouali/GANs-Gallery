@@ -43,7 +43,7 @@ class WGANGPLoss(Loss):
         return -fake_logits.mean()
 
     def discriminator_loss(self, fake_logits, real_logits):
-        return - fake_logits.mean() + real_logits.mean()
+        return fake_logits.mean() - real_logits.mean()
     
     def gradient_penalty(self, fake_samples, real_samples):
         bs = real_samples.size(0)
