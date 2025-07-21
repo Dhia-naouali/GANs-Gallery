@@ -128,7 +128,7 @@ class Trainer:
             if self.ada:
                 real_images = self.ada(real_images)
 
-            D_loss, real_acc, fake_acc, real_logits = self.D_train_step(noise, real_images)
+            D_loss, fake_acc, real_acc, real_logits = self.D_train_step(noise, real_images)
 
             if self.ada:
                 self.ada.update(real_acc)
@@ -136,7 +136,7 @@ class Trainer:
             self.D_scheduler.step()
         
         noise = torch.randn(bs, self.config.model.lat_dim, device=self.device)
-        G_loss = self.G_train_step(noise, real_logits.detach())
+        G_loss = self.G_train_step(noise, real_logits)
         self.G_scheduler.step()
 
         return {
@@ -150,7 +150,7 @@ class Trainer:
     def D_train_step(self, noise, real_images):
         self.D.zero_grad()
         with autocast(device_type=self.device.type):
-            real_images.detach().requires_grad_(True)
+            real_images = real_images.detach().requires_grad_(True)
             real_logits = self.D(real_images)
 
             with torch.no_grad():
@@ -166,10 +166,10 @@ class Trainer:
         self.D_scaler.update()
 
         with torch.no_grad():
-            fake_acc = (torch.tanh(fake_logits) < 0).float().mean().item()
-            real_acc = (torch.tanh(real_logits) > 0).float().mean().item()
+            fake_acc = (fake_logits < 0).float().mean().item()
+            real_acc = (real_logits > 0).float().mean().item()
 
-        return D_loss.item(), fake_acc, real_acc, real_logits.detach()
+        return D_loss.item(), fake_acc, real_acc, real_logits
 
     def G_train_step(self, noise, real_logits):
         self.G.zero_grad()

@@ -37,7 +37,7 @@ class BCELoss(Loss):
 class WGANGPLoss(Loss):
     def __init__(self, config, lambda_gp=10, D=None):
         self.lambda_ = lambda_gp
-        self.D = D# a reference to the Discriminator
+        self.D = D
 
     def generator_loss(self, fake_logits, real_logits):
         return -fake_logits.mean()
