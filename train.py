@@ -126,7 +126,7 @@ class Trainer:
             noise = torch.randn(bs, self.config.model.lat_dim, device=self.device)
             # using the same samples for multiple D steps, at least let's introduce some augs
             if self.ada:
-                real_images = self.ada(real_images).detach()
+                real_images = self.ada(real_images)
 
             D_loss, real_acc, fake_acc, real_logits = self.D_train_step(noise, real_images)
 
@@ -150,7 +150,7 @@ class Trainer:
     def D_train_step(self, noise, real_images):
         self.D.zero_grad()
         with autocast(device_type=self.device.type):
-            real_images.requires_grad_(True)
+            real_images.detach().requires_grad_(True)
             real_logits = self.D(real_images)
 
             with torch.no_grad():
@@ -169,7 +169,7 @@ class Trainer:
             fake_acc = (torch.tanh(fake_logits) < 0).float().mean().item()
             real_acc = (torch.tanh(real_logits) > 0).float().mean().item()
 
-        return D_loss.item(), fake_acc, real_acc, real_logits
+        return D_loss.item(), fake_acc, real_acc, real_logits.detach()
 
     def G_train_step(self, noise, real_logits):
         self.G.zero_grad()
