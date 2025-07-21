@@ -120,7 +120,7 @@ class WarmUpLinearDecayScheduler(Scheduler):
     def __init__(self, optimizer, total_steps, config):
         self.total_steps = total_steps
         self.init_lr = optimizer.param_groups[0]['lr']
-        self.eta_min_ratio = config.get("min_lr", 0.1)
+        self.eta_min_ratio = config.get("min_lr", 1)
 
         warm_up_phase = config.get("warm_up_phase", 0.05)
         warm_up_phase = warm_up_phase / 100 if warm_up_phase > 1 else warm_up_phase
