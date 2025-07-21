@@ -126,7 +126,7 @@ class Trainer:
             noise = torch.randn(bs, self.config.model.lat_dim, device=self.device)
             # using the same samples for multiple D steps, at least let's introduce some augs
             if self.ada:
-                real_images = self.ada(real_images)
+                real_images = self.ada(real_images).detach()
 
             D_loss, real_acc, fake_acc, real_logits = self.D_train_step(noise, real_images)
 
