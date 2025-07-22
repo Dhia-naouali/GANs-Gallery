@@ -3,60 +3,54 @@ import cv2
 import random
 import numpy as np
 import torch
-from torch.utils.data import Dataset, DataLoader
-from torchvision.utils import save_image
-import albumentations as A 
-from albumentations.pytorch import ToTensorV2 as ToTensor
+from torch import nn
 
-class CarsDataset(Dataset):
-    def __init__(self, root_dir, image_size=256, augmentations=None):
-        self.root_dir = root_dir
-        self.image_size = image_size
-        
-        self.image_paths = [
-            os.path.join(self.root_dir, f)                 
-            for f in os.listdir(self.root_dir)
-        ]
-
-        self.transform = self._init_A(augmentations or {})
-
-    def _init_A(self, augs):
-        transform = [A.Resize(self.image_size, self.image_size)]
+# pip install nvidia-dali-cuda110  # wheel matching CUDA 11 on P100
+# pip install kornia
+from nvidia.dali import pipeline_def, fn, types, Pipeline
+from nvidia.dali.plugin.pytorch import DALIGenericIterator
+import kornia.augmentations as K
 
 
-        if augs.get("horizontal_flip", 0):
-            transform.append(A.HorizontalFlip(.5))
-        
-        if augs.get("rotation", 0):
-            transform.append(A.Rotate(augs.get("rotation", 0)))
+@pipeline_def(batch_size=32, image_size=256, enable_conditionals=False)
+def data_pipeline(root_dir, horizontal_flip=.5):
+    image_size=Pipeline.current().image_size
 
-        if p := augs.get("color_jitter", 0):
-            transform.append(
-                A.ColorJitter(
-                    brightness=p,
-                    saturation=p,
-                    hue=p//2
-                )
-            )
+    image_files = fn.readers.file(file_root=root_dir, random_shuffle=True, name="Reader")
+    images = fn.decoders.image(image_files, device="mixed", output_type=types.RGB)
+    images = fn.resize(
+        resize_x=image_size,
+        resize_y=image_size,
+        device="gpu",
+        interp_type=types.INTERP_TRIANGULAR,
+    )
+    coin_flip = fn.coin_flip(probability=horizontal_flip, dtype=types.BOOL)
+    images = fn.flip(images, horizontal=coin_flip)
+    images = fn.cast(images / 255.0, dtype=types.FLOAT16)
 
+    images = fn.normalize(
+        images,
+        mean=[.5]*3,
+        std=[.5]*3
+    )
 
-        transform.extend([
-            A.Normalize(mean=(.5, .5, .5), std=(.5, .5, .5)),
-            ToTensor(),
-        ])
-
-        return A.Compose(transform)
-    
-    def __len__(self):
-        return len(self.image_paths)
-    
-    def __getitem__(self, idx):
-        image_path = self.image_paths[idx]
-
-        image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
-        return self.transform(image=image)["image"]
+    return images
 
 
+def setup_dataloader(config):
+    pipe = data_pipeline(
+        root_dir = config.data.get("root_dir", "data/afhq/cat"),
+        seed=config.get("seed", 12),
+        batch_size=config.training.get("batch_size", 32),
+        image_size=config.training.get("image_size", 256)        
+    )
+    pipe.build()
+    return DALIGenericIterator(
+        [pipe],
+        ["images"],
+        size=pipe.epoch_size("Reader"),
+        auto_reset=True
+    )
 
 class AdaptiveDiscriminatorAugmentation:
     def __init__(self, target_acc=.6, adjustment_speed=1e-2, max_prob=.8):
@@ -66,15 +60,15 @@ class AdaptiveDiscriminatorAugmentation:
         self.p = 0
         self.real_acc_ema = 0.5
 
-        self.transform = A.Compose([
-            A.HorizontalFlip(.5),
-            A.VerticalFlip(.1),
-            A.Rotate(10),
-            A.ColorJitter(brightness=.2, contrast=.2, saturation=.2, hue=.1),
-            A.Affine(translate_percent=(.1, .1), scale=(.9, 1.1)),
-            A.Normalize(mean=(.5, .5, .5), std=(.5, .5, .5)),
-            ToTensor(),
-        ])
+        self.transform = K.AugmentationSequential(
+            K.RandomHorizontalFlip(p=self.p),
+            K.RandomVerticalFlip(p=self.p/4),
+            K.RandomRotation(10, p=self.p),
+            K.ColorJitter(brightness=.2, contrast=.2, saturation=.2, hue=.1, p=self.p),
+            K.affine(degrees=10, translate=(.1, .1), p=self.p),
+            data_keys=["input"],
+            same_on_batch=False
+        ).half()
 
     def update(self, real_acc):
         self.real_acc_ema = .99 * self.real_acc_ema + .01 * real_acc
@@ -85,38 +79,12 @@ class AdaptiveDiscriminatorAugmentation:
             self.p = max(self.p - self.p_step, 0)
 
     def __call__(self, images):
-        device = images.device
         if self.p == 0:
             return images
         
-        aug_images = []
-        for image in images:
-            if random.random() < self.p:
-                image = image.permute(1, 2, 0).cpu().numpy()
-                image = (
-                    ((image * .5) + .5) * 255
-                ).astype(np.uint8)
-                image = self.transform(image=image)["image"].to(device, non_blocking=True)
-            aug_images.append(image)
-
-        return torch.stack(aug_images)
-
-
-def setup_dataloader(config):
-
-    dataset = CarsDataset(
-        root_dir = config.data.get("root_dir", "data/afhq/cat"),
-        image_size = config.training.get("image_size", config.data.get("image_size", 256)),
-        augmentations = config.data.get("augmentations", {})
-    )
-
-    dataloader = DataLoader(
-        dataset,
-        batch_size=config.training.get("batch_size", 32),
-        shuffle=True,
-        num_workers=config.training.get("num_workers", os.cpu_count()),
-        pin_memory=config.training.get("pin_memory", True),
-        drop_last=True,
-    )
-
-    return dataloader
+        P = torch.bernoulli(
+            torch.full((images.size(0),), p)
+        ).bool()
+        
+        images[P] = self.transform(images[P])
+        return images
