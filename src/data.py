@@ -51,7 +51,7 @@ def setup_dataloader(config):
         ["images"],
         size=pipe.epoch_size("Reader"),
         auto_reset=True,
-        device_id=0,
+        # device_id=0,
     )
 
 
