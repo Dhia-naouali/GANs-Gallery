@@ -21,8 +21,6 @@ def data_pipeline(root_dir, image_size, target_class="cat", horizontal_flip=.5):
         device="gpu",
         interp_type=types.INTERP_TRIANGULAR,
     )
-    coin_flip = fn.random.coin_flip(probability=horizontal_flip, dtype=types.INT32)
-    images = fn.flip(images, horizontal=coin_flip)
 
     images = fn.normalize(
         images,
