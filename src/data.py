@@ -65,13 +65,13 @@ class AdaptiveDiscriminatorAugmentation:
 
         self.transform = K.AugmentationSequential(
             K.RandomHorizontalFlip(p=self.p),
-            K.RandomVerticalFlip(p=self.p/4),
+            K.RandomVerticalFlip(p=self.p),
             K.RandomRotation(10, p=self.p),
             K.ColorJitter(brightness=.2, contrast=.2, saturation=.2, hue=.1, p=self.p),
             K.RandomAffine(degrees=10, translate=(.1, .1), p=self.p),
             data_keys=["input"],
             same_on_batch=False
-        ).half()
+        )
 
     def update(self, real_acc):
         self.real_acc_ema = .99 * self.real_acc_ema + .01 * real_acc
@@ -80,6 +80,8 @@ class AdaptiveDiscriminatorAugmentation:
             self.p = min(self.p + self.p_step, self.max_prob)
         else:
             self.p = max(self.p - self.p_step, 0)
+        for aug in self.augmentations:
+            aug.p = self.p
 
     def __call__(self, images):
         if self.p == 0:
