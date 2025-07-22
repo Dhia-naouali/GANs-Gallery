@@ -54,7 +54,7 @@ class Trainer:
             target_acc=config.ADA.ada_target_acc
         ) if config.ADA.use_ADA else None
 
-        self.ada.transform = torch.compile(self.ada.transform, mode="max-autotune-no-cudagraphs")
+        # self.ada.transform = torch.compile(self.ada.transform, mode="max-autotune-no-cudagraphs")
 
         # proper weights_init (muP ?), hold on buddy brb
 
