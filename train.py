@@ -113,7 +113,8 @@ class Trainer:
                 ),
         )
 
-        total_steps = len(self.dataloader) * len(self.dataloader.dataset)
+        # total_steps = len(self.dataloader) * len(self.dataloader.dataset)
+        total_steps = 5000
         self.G_scheduler = setup_scheduler(self.G_optimizer, total_steps, self.config)
         self.D_scheduler = setup_scheduler(self.D_optimizer, total_steps * self.n_critic, self.config)
 
