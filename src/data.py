@@ -15,6 +15,7 @@ def data_pipeline(root_dir, image_size, horizontal_flip=.5):
     image_files = fn.readers.file(file_root=root_dir, random_shuffle=True, name="Reader")
     images = fn.decoders.image(image_files, device="mixed", output_type=types.RGB)
     images = fn.resize(
+        images,
         resize_x=image_size,
         resize_y=image_size,
         device="gpu",
