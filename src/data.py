@@ -88,7 +88,7 @@ class AdaptiveDiscriminatorAugmentation:
             return images
         
         P = torch.bernoulli(
-            torch.full((images.size(0),), p)
+            torch.full((images.size(0),), self.p)
         ).bool()
         
         images[P] = self.transform(images[P])
