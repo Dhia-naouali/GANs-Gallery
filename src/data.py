@@ -5,11 +5,9 @@ import numpy as np
 import torch
 from torch import nn
 
-# pip install nvidia-dali-cuda110  # wheel matching CUDA 11 on P100
-# pip install kornia
 from nvidia.dali import pipeline_def, fn, types, Pipeline
 from nvidia.dali.plugin.pytorch import DALIGenericIterator
-import kornia.augmentations as K
+import kornia.augmentation as K
 
 
 @pipeline_def(batch_size=32, image_size=256, enable_conditionals=False)
