@@ -158,7 +158,7 @@ class Trainer:
             fake_logits = self.D(fake_images)
             
             D_loss = self.criterion.discriminator_loss(fake_logits, real_logits)
-            if self.config.loss.criterion == "wgan_gp":
+            if self.config.loss.criterion == "wgan_gp--":
                 D_loss += self.criterion.gradient_penalty(fake_images, real_images)
         
         self.D_scaler.scale(D_loss).backward()
