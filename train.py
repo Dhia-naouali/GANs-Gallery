@@ -136,6 +136,7 @@ class Trainer:
             if self.ada:
                 real_images = self.ada(real_images)
 
+            print(real_images.shape)
             D_loss, fake_acc, real_acc, real_logits = self.D_train_step(noise, real_images)
 
             if self.ada:
