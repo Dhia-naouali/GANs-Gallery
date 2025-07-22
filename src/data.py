@@ -29,6 +29,10 @@ def data_pipeline(root_dir, image_size, target_class="cat", horizontal_flip=.5):
         mean=127.5,
         stddev=127.5*3
     )
+    images = fn.transpose(
+        images,
+        output_layout="CHW"
+    )
 
     return fn.cast(images, dtype=types.FLOAT16)
     
@@ -49,9 +53,7 @@ def setup_dataloader(config):
     return DALIGenericIterator(
         [pipe],
         ["images"],
-        size=pipe.epoch_size("Reader"),
         auto_reset=True,
-        # device_id=0,
     )
 
 
