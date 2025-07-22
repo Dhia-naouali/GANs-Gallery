@@ -1,4 +1,4 @@
-# Cars Generator
+# Cars Generator (in progress)
 
 (polishing & uploading old project + learning a bunch of new things about GANs)
 
