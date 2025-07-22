@@ -29,6 +29,8 @@ from src.data import setup_dataloader, AdaptiveDiscriminatorAugmentation
 from src.losses import setup_loss
 
 
+torch.set_default_device("cuda:0")
+
 class Trainer:
     def __init__(self, config):
         # regularizers
@@ -36,16 +38,25 @@ class Trainer:
 
 
         self.config = config
-        self.device = torch.device(config.device if torch.cuda.is_available() else "cpu") # someone's CPU goin down 💀
-        seed_all()
+        seed_all() # seed dali
 
         setup_directories(self.config)
 
         self.G, self.D = setup_models(config.model)
         print(self.G, self.D)
-        self.G.to(self.device, memory_format=torch.channels_last); self.D.to(self.device, memory_format=torch.channels_last)
 
-        # proper weights_init (muP ?)
+        self.G.contiguous(memory_format=torch.channels_last); self.D.contiguous(memory_format=torch.channels_last)
+        self.G = torch.compile(self.G, mode="max-autotune-no-cudagraphs")
+        self.D = torch.compile(self.D, mode="max-autotune-no-cudagraphs")
+
+
+        self.ada = AdaptiveDiscriminatorAugmentation(
+            target_acc=config.ADA.ada_target_acc
+        ) if config.ADA.use_ADA else None
+
+        self.ada.transform = torch.compile(self.ada.transform, mode="max-autotune-no-cudagraphs")
+
+        # proper weights_init (muP ?), hold on buddy brb
 
         print(f"Generator: {count_params(self.G) * 1e-6:.2f} \n"
               f"Discriminator: {count_params(self.D) * 1e-6:.2f}")
@@ -59,10 +70,6 @@ class Trainer:
         self.setup_optimizers()
         self.setup_loss_and_regs()
 
-
-        self.ada = AdaptiveDiscriminatorAugmentation(
-            target_acc=config.ADA.ada_target_acc
-        ) if config.ADA.use_ADA else None
 
 
         self.G_scaler = GradScaler(device=self.device)
@@ -195,6 +202,7 @@ class Trainer:
         pbar = tqdm(self.dataloader, desc=f"Epoch {epoch}/{epochs}: ")
 
         for batch_idx, real_images in enumerate(pbar):
+            real_images = real_images[0]["images"]
             real_images = real_images.to(self.device, memory_format=torch.channels_last)
             step_metrics = self.train_step(real_images)
             self.tracker.log(step_metrics, batch_idx, pbar=pbar)

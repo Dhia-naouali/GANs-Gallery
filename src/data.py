@@ -11,8 +11,8 @@ import kornia.augmentation as K
 
 
 @pipeline_def(batch_size=8, enable_conditionals=False)
-def data_pipeline(root_dir, image_size, horizontal_flip=.5):
-    image_files = fn.readers.file(file_root=root_dir, random_shuffle=True, name="Reader")
+def data_pipeline(root_dir, image_size, target_class="cat", horizontal_flip=.5):
+    image_files, _ = fn.readers.file(file_root=root_dir, random_shuffle=True, name="Reader", dir_filters=target_class)
     images = fn.decoders.image(image_files, device="mixed", output_type=types.RGB)
     images = fn.resize(
         images,
@@ -21,33 +21,38 @@ def data_pipeline(root_dir, image_size, horizontal_flip=.5):
         device="gpu",
         interp_type=types.INTERP_TRIANGULAR,
     )
-    coin_flip = fn.coin_flip(probability=horizontal_flip, dtype=types.BOOL)
+    coin_flip = fn.random.coin_flip(probability=horizontal_flip, dtype=types.INT32)
     images = fn.flip(images, horizontal=coin_flip)
-    images = fn.cast(images / 255.0, dtype=types.FLOAT16)
 
     images = fn.normalize(
         images,
-        mean=[.5]*3,
-        std=[.5]*3
+        mean=127.5,
+        stddev=127.5*3
     )
 
-    return images
+    return fn.cast(images, dtype=types.FLOAT16)
+    
 
 
 def setup_dataloader(config):
+    root_dir, target_class = config.data.get("root_dir", "data/afhq/cat").split(os.sep)
     pipe = data_pipeline(
-        root_dir = config.data.get("root_dir", "data/afhq/cat"),
+        root_dir=root_dir,
         seed=config.get("seed", 12),
         batch_size=config.training.get("batch_size", 32),
-        image_size=config.training.get("image_size", 256)
+        image_size=config.training.get("image_size", 256),
+        target_class=target_class,
     )
     pipe.build()
     return DALIGenericIterator(
         [pipe],
         ["images"],
         size=pipe.epoch_size("Reader"),
-        auto_reset=True
+        auto_reset=True,
+        device_id=0,
+        num_threads=os.cpu_count(),
     )
+
 
 class AdaptiveDiscriminatorAugmentation:
     def __init__(self, target_acc=.6, adjustment_speed=1e-2, max_prob=.8):
