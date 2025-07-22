@@ -10,10 +10,8 @@ from nvidia.dali.plugin.pytorch import DALIGenericIterator
 import kornia.augmentation as K
 
 
-@pipeline_def(batch_size=32, image_size=256, enable_conditionals=False)
-def data_pipeline(root_dir, horizontal_flip=.5):
-    image_size=Pipeline.current().image_size
-
+@pipeline_def(batch_size=8, enable_conditionals=False)
+def data_pipeline(root_dir, image_size, horizontal_flip=.5):
     image_files = fn.readers.file(file_root=root_dir, random_shuffle=True, name="Reader")
     images = fn.decoders.image(image_files, device="mixed", output_type=types.RGB)
     images = fn.resize(
@@ -40,7 +38,7 @@ def setup_dataloader(config):
         root_dir = config.data.get("root_dir", "data/afhq/cat"),
         seed=config.get("seed", 12),
         batch_size=config.training.get("batch_size", 32),
-        image_size=config.training.get("image_size", 256)        
+        image_size=config.training.get("image_size", 256)
     )
     pipe.build()
     return DALIGenericIterator(
