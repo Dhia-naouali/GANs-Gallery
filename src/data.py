@@ -80,7 +80,7 @@ class AdaptiveDiscriminatorAugmentation:
             self.p = min(self.p + self.p_step, self.max_prob)
         else:
             self.p = max(self.p - self.p_step, 0)
-        for aug in self.augmentations:
+        for aug in self.transform:
             aug.p = self.p
 
     def __call__(self, images):
