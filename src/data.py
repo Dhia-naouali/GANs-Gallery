@@ -67,7 +67,7 @@ class AdaptiveDiscriminatorAugmentation:
             K.RandomVerticalFlip(p=self.p/4),
             K.RandomRotation(10, p=self.p),
             K.ColorJitter(brightness=.2, contrast=.2, saturation=.2, hue=.1, p=self.p),
-            K.Affine(degrees=10, translate=(.1, .1), p=self.p),
+            K.RandomAffine(degrees=10, translate=(.1, .1), p=self.p),
             data_keys=["input"],
             same_on_batch=False
         ).half()
