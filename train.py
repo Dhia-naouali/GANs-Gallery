@@ -45,7 +45,7 @@ class Trainer:
         self.G, self.D = setup_models(config.model)
         print(self.G, self.D)
 
-        self.G.contiguous(memory_format=torch.channels_last); self.D.contiguous(memory_format=torch.channels_last)
+        # self.G.contiguous(memory_format=torch.channels_last); self.D.contiguous(memory_format=torch.channels_last)
         self.G = torch.compile(self.G, mode="max-autotune-no-cudagraphs")
         self.D = torch.compile(self.D, mode="max-autotune-no-cudagraphs")
 
