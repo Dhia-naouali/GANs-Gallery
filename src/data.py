@@ -42,6 +42,8 @@ def setup_dataloader(config):
         batch_size=config.training.get("batch_size", 32),
         image_size=config.training.get("image_size", 256),
         target_class=target_class,
+        device_id=0,
+        num_threads=os.cpu_count(),
     )
     pipe.build()
     return DALIGenericIterator(
@@ -50,7 +52,6 @@ def setup_dataloader(config):
         size=pipe.epoch_size("Reader"),
         auto_reset=True,
         device_id=0,
-        num_threads=os.cpu_count(),
     )
 
 
