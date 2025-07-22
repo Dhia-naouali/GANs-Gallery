@@ -35,7 +35,7 @@ class Trainer:
     def __init__(self, config):
         # regularizers
         # compile ?
-
+        self.device="cuda:0"
 
         self.config = config
         seed_all() # seed dali
