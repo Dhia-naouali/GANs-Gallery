@@ -13,7 +13,9 @@ import kornia.augmentation as K
 @pipeline_def(batch_size=8, enable_conditionals=False)
 def data_pipeline(root_dir, image_size, target_class="cat", horizontal_flip=.5):
     image_files, _ = fn.readers.file(file_root=root_dir, random_shuffle=True, name="Reader", dir_filters=target_class)
+    print(len(image_files))
     images = fn.decoders.image(image_files, device="mixed", output_type=types.RGB)
+    print(len(images))
     images = fn.resize(
         images,
         resize_x=image_size,
