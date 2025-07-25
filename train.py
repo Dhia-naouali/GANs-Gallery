@@ -52,9 +52,8 @@ class Trainer:
         self.ada = AdaptiveDiscriminatorAugmentation(
             target_acc=config.ADA.ada_target_acc
         ) if config.ADA.use_ADA else None
-
         # self.ada.transform = torch.compile(self.ada.transform, mode="max-autotune-no-cudagraphs")
-
+        
         # proper weights_init (muP ?), hold on buddy brb
 
         print(f"Generator: {count_params(self.G) * 1e-6:.2f} \n"
@@ -202,9 +201,6 @@ class Trainer:
         pbar = tqdm(self.dataloader, desc=f"Epoch {epoch}/{epochs}: ")
 
         for batch_idx, real_images in enumerate(pbar):
-            # print(type(real_images))
-            # print(len(real_images))
-            # print(type(real_images[0]))
             real_images = real_images[0]["images"]
             real_images = real_images.to(self.device)
             step_metrics = self.train_step(real_images)
