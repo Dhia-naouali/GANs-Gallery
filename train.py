@@ -43,7 +43,6 @@ class Trainer:
         setup_directories(self.config)
 
         self.G, self.D = setup_models(config.model)
-        print(self.G, self.D)
 
         # self.G.contiguous(memory_format=torch.channels_last); self.D.contiguous(memory_format=torch.channels_last)
         # self.G = torch.compile(self.G, mode="max-autotune-no-cudagraphs")
@@ -136,7 +135,6 @@ class Trainer:
             if self.ada:
                 real_images = self.ada(real_images)
 
-            print(real_images.shape)
             D_loss, fake_acc, real_acc, real_logits = self.D_train_step(noise, real_images)
 
             if self.ada:
@@ -206,7 +204,7 @@ class Trainer:
         for batch_idx, real_images in enumerate(pbar):
             print(type(real_images))
             print(len(real_images))
-            print(len(real_images[0]))
+            print(type(real_images[0]))
             real_images = real_images[0]["images"]
             real_images = real_images.to(self.device)
             step_metrics = self.train_step(real_images)

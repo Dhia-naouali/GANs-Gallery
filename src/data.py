@@ -88,6 +88,7 @@ class AdaptiveDiscriminatorAugmentation:
             aug.p = self.p
 
     def __call__(self, images):
+        print("ADA", images.size())
         if self.p == 0:
             return images
         
