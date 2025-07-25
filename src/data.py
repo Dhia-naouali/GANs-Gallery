@@ -14,7 +14,7 @@ import kornia.augmentation as K
 def data_pipeline(root_dir, image_size, target_subdir=None):
     image_files, _ = fn.readers.file(
         file_root=root_dir,
-        dir_fileters=target_subdir,
+        dir_fileter=target_subdir,
         random_shuffle=True, 
         name="Reader"
     )
@@ -41,7 +41,7 @@ def setup_dataloader(config):
     root_dir = os.sep.join(root_dir)
     pipe = data_pipeline(
         root_dir=root_dir,
-        target_dir=target_subdir,
+        target_subdir=target_subdir,
         seed=config.get("seed", 12),
         batch_size=config.training.get("batch_size", 32),
         image_size=config.training.get("image_size", 256),
