@@ -40,6 +40,7 @@ def data_pipeline(root_dir, image_size, target_class="cat", horizontal_flip=.5):
 
 def setup_dataloader(config):
     *root_dir, target_class = config.data.get("root_dir", "data/afhq/cat").split(os.sep)
+    print(os.sep.join(root_dir), target_class)
     pipe = data_pipeline(
         root_dir=os.sep.join(root_dir),
         seed=config.get("seed", 12),
