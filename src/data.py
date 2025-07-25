@@ -43,7 +43,7 @@ def setup_dataloader(config):
     # print("TARGET CLASS", target_class)
     # print("\n"*4)
     pipe = data_pipeline(
-        root_dir=root_dir,
+        root_dir=config.data.get("root_dir", "data/afhq/cat"),
         seed=config.get("seed", 12),
         batch_size=config.training.get("batch_size", 32),
         image_size=config.training.get("image_size", 256),
