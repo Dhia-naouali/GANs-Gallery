@@ -13,9 +13,7 @@ import kornia.augmentation as K
 @pipeline_def(batch_size=8, enable_conditionals=False)
 def data_pipeline(root_dir, image_size, target_class="cat", horizontal_flip=.5):
     image_files, _ = fn.readers.file(file_root=root_dir, random_shuffle=True, name="Reader", dir_filters=target_class)
-    print(len(image_files))
     images = fn.decoders.image(image_files, device="mixed", output_type=types.RGB)
-    print(len(images))
     images = fn.resize(
         images,
         resize_x=image_size,
@@ -40,7 +38,10 @@ def data_pipeline(root_dir, image_size, target_class="cat", horizontal_flip=.5):
 
 def setup_dataloader(config):
     *root_dir, target_class = config.data.get("root_dir", "data/afhq/cat").split(os.sep)
-    print(os.sep.join(root_dir), target_class)
+    print("\n"*4)
+    print("ROOT DIR", os.sep.join(root_dir))
+    print("TARGET CLASS", target_class)
+    print("\n"*4)
     pipe = data_pipeline(
         root_dir=os.sep.join(root_dir),
         seed=config.get("seed", 12),
