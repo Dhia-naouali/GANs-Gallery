@@ -204,8 +204,11 @@ class Trainer:
         pbar = tqdm(self.dataloader, desc=f"Epoch {epoch}/{epochs}: ")
 
         for batch_idx, real_images in enumerate(pbar):
+            print(type(real_images))
+            print(len(real_images))
+            print(len(real_images[0]))
             real_images = real_images[0]["images"]
-            real_images = real_images.to(self.device, memory_format=torch.channels_last)
+            real_images = real_images.to(self.device)
             step_metrics = self.train_step(real_images)
             self.tracker.log(step_metrics, batch_idx, pbar=pbar)
             
