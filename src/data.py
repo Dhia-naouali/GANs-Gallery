@@ -14,7 +14,7 @@ import kornia.augmentation as K
 def data_pipeline(root_dir, image_size, target_subdir=None):
     image_files, _ = fn.readers.file(
         file_root=root_dir,
-        dir_fileter=target_subdir,
+        dir_fileters=target_subdir,
         random_shuffle=True, 
         name="Reader"
     )
