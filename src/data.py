@@ -88,13 +88,16 @@ class AdaptiveDiscriminatorAugmentation:
             aug.p = self.p
 
     def __call__(self, images):
-        print("ADA", images.size())
+        # print("ADA", images.size())
         if self.p == 0:
             return images
         
         P = torch.bernoulli(
             torch.full((images.size(0),), self.p)
         ).bool()
+        
+        if not P.any():
+            return images
         
         images[P] = self.transform(images[P])
         return images

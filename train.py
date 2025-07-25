@@ -202,9 +202,9 @@ class Trainer:
         pbar = tqdm(self.dataloader, desc=f"Epoch {epoch}/{epochs}: ")
 
         for batch_idx, real_images in enumerate(pbar):
-            print(type(real_images))
-            print(len(real_images))
-            print(type(real_images[0]))
+            # print(type(real_images))
+            # print(len(real_images))
+            # print(type(real_images[0]))
             real_images = real_images[0]["images"]
             real_images = real_images.to(self.device)
             step_metrics = self.train_step(real_images)
