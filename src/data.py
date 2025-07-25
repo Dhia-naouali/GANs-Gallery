@@ -11,8 +11,8 @@ import kornia.augmentation as K
 
 
 @pipeline_def(batch_size=8, enable_conditionals=False)
-def data_pipeline(root_dir, image_size, target_class="cat", horizontal_flip=.5):
-    image_files, _ = fn.readers.file(file_root=root_dir, random_shuffle=True, name="Reader", dir_filters=target_class)
+def data_pipeline(root_dir, image_size):
+    image_files, _ = fn.readers.file(file_root=root_dir, random_shuffle=True, name="Reader")
     images = fn.decoders.image(image_files, device="mixed", output_type=types.RGB)
     images = fn.resize(
         images,
@@ -37,17 +37,17 @@ def data_pipeline(root_dir, image_size, target_class="cat", horizontal_flip=.5):
 
 
 def setup_dataloader(config):
-    *root_dir, target_class = config.data.get("root_dir", "data/afhq/cat").split(os.sep)
-    print("\n"*4)
-    print("ROOT DIR", os.sep.join(root_dir))
-    print("TARGET CLASS", target_class)
-    print("\n"*4)
+    # *root_dir, target_class = config.data.get("root_dir", "data/afhq/cat").split(os.sep)
+    # print("\n"*4)
+    # print("ROOT DIR", os.sep.join(root_dir))
+    # print("TARGET CLASS", target_class)
+    # print("\n"*4)
     pipe = data_pipeline(
-        root_dir=os.sep.join(root_dir),
+        root_dir=root_dir,
         seed=config.get("seed", 12),
         batch_size=config.training.get("batch_size", 32),
         image_size=config.training.get("image_size", 256),
-        target_class=target_class,
+        # target_class=target_class,
         device_id=0,
         num_threads=os.cpu_count(),
     )
