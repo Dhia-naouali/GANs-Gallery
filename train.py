@@ -23,6 +23,7 @@ from src.utils import (
     CheckpointManager,
     generate_sample_images,
     save_sample_images,
+    init_model_params
 )
 from src.models import setup_models
 from src.data import setup_dataloader, AdaptiveDiscriminatorAugmentation
@@ -43,6 +44,11 @@ class Trainer:
 
         self.G, self.D = setup_models(config.model)
 
+        # (muP ?), hold on buddy brb
+        init_model_params(self.G)
+        init_model_params(self.D)
+
+
         # self.G.contiguous(memory_format=torch.channels_last); self.D.contiguous(memory_format=torch.channels_last)
         # self.G = torch.compile(self.G, mode="max-autotune-no-cudagraphs")
         # self.D = torch.compile(self.D, mode="max-autotune-no-cudagraphs")
@@ -54,7 +60,6 @@ class Trainer:
         self.real_acc = None
         # self.ada.transform = torch.compile(self.ada.transform, mode="max-autotune-no-cudagraphs")
         
-        # proper weights_init (muP ?), hold on buddy brb
 
         print(f"Generator: {count_params(self.G) * 1e-6:.2f} \n"
               f"Discriminator: {count_params(self.D) * 1e-6:.2f}")

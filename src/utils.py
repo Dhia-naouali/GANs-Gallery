@@ -6,7 +6,7 @@ import wandb # I should get a wandb sticker
 import math
 
 import torch
-from torch import optim
+from torch import optim, nn
 from torchvision.utils import save_image
 
 def seed_all(seed=12):
@@ -270,3 +270,29 @@ class CheckpointManager:
     def cherry_pick(self):
         # to be called at the end to pick the best checkpoint
         ...
+
+
+
+def init_model_params(model, init_scheme="normal", gain=0.02):
+    def init_func(module):
+        modulename = module.__class__.__name__
+        if hasattr(module, "weight") and "Conv" in modulename or "Linear" in modulename:
+            match init_scheme:
+                case "normal":
+                    nn.init.normal_(module.weight.data, 0., gain)
+                case "xavier":
+                    nn.init.xavier_normal_(module.weight.data, a=0, gain=gain)
+                case "kaiming":
+                    nn.init.kaiming_normal_(module.weight.data, gain=gain, mode="fan_in")
+                case "orthogonal":
+                    nn.init.orthogonal_(module.weight.data, gain=gain)
+                case _:
+                    raise Exception(f"{init_scheme} not implemented")
+            
+            if hasattr(module, "bias") and module.bias is not None:
+                nn.init.constant_(module.bias.data, 0.0)
+        elif "Norm" in modulename and hasattr(module, "weight"): # just to dodge pixel norm
+            nn.init.normal_(module.weight.data, 1.0, gain)
+            nn.init.constant_(module.bias.data, 0.0)
+    
+    model.apply(init_func)
