@@ -81,77 +81,6 @@ def setup_dataloader(config):
 
 
 class AdaptiveDiscriminatorAugmentation(AugmentationSequential):
-    r"""Implementation of Adaptive Discriminator Augmentation (ADA) for GANs training.
-
-    adjust a global probability p over all augmentations list to select a subset of images to augment
-    based on an exponential moving average of the Discriminator's accuracy labeling real samples.
-
-
-    Args:
-        *args: a list of kornia augmentation modules, set to a default list if not specified.
-
-        initial_p: float
-            initial global probability `p` for applying the augmentations
-
-        adjustment_speed: float
-            step size for updating the global probability `p`
-
-        max_p: float
-            maximum allowed value for `p`
-
-        target_real_acc: float
-            target Discriminator accuracy to guide `p` adjustments
-
-
-        ema_lambda: float
-            EMA smoothing factor. The real accuracy EMA is what's used to determine the `p` update
-
-        update_every: int
-            `p` update frequency (in steps)
-
-        erasing_scale: Tuple[float, float]
-            scale range used for `RandomErasing` if default augmentations are used
-
-        erasing_ratio: Tuple[float, float]
-            aspect ratio range used for `RandomErasing` if default augmentations are used
-
-        erasing_fill_value: float
-            fill value used in `RandomErasing`
-
-        same_on_batch: Optional[bool]
-            apply the same transformation across the batch
-
-        data_keys: Optional[List[str]]
-            input types to apply augmentations on
-
-
-        **kwargs: Additional keyword arguments passed to `AugmentationSequential`
-
-
-    Examples:
-        >>> from kornia.augmentation.presets.ada import AdaptiveDiscriminatorAugmentation
-        >>> original = torch.randn(2, 3, 16, 16)
-        >>> ada = AdaptiveDiscriminatorAugmentation()
-        >>> augmented = ada(original)
-
-    This example demonstrates using default augmentations with AdaptiveDiscriminatorAugmentation in a GAN training loop.
-
-
-        >>> import kornia.augmentation as K
-        >>> from kornia.augmentation.presets.ada import AdaptiveDiscriminatorAugmentation
-        >>> originals = torch.randn(2, 3, 5, 6)
-        >>> aug_list = [
-        ...     K.RandomRotation90(times=(0, 3), p=1),
-        ...     K.RandomAffine(degrees=10, translate=(.1, .1), scale=(.9, 1.1), p=1),
-        ...     K.ColorJitter(brightness=.2, contrast=.2, saturation=.2, hue=.1, p=1),
-        ... ]
-
-        >>> ada = AdaptiveDiscriminatorAugmentation(*aug_list)
-        >>> augmented = ada(original)
-
-    This example demonstrates using custom augmentations with AdaptiveDiscriminatorAugmentation.
-    """
-
     def __init__(
         self,
         *args: Union[_AugmentationBase, ImageSequential],
@@ -230,14 +159,6 @@ class AdaptiveDiscriminatorAugmentation(AugmentationSequential):
         )
 
     def update(self, real_acc: float) -> None:
-        r"""Updates internal params `p` once every `update_every` calls based on discriminator accuracy.
-
-        the update is based on an exponential moving average of `real_acc`
-        `p` is updated by adding or subtracting `adjustment_speed` from it and clamp it at [0, `max_p`]
-
-        Args:
-            real_acc (float): the Discriminator's accuracy labeling real samples.
-        """
         self._num_calls += 1
 
         if self._num_calls < self.update_every:
@@ -298,14 +219,6 @@ class AdaptiveDiscriminatorAugmentation(AugmentationSequential):
         data_keys: Optional[_data_keys_type] = None,
         real_acc: Optional[float] = None,
     ) -> _inputs_type:
-        r"""Apply augmentations to a subset of input tensors with global probability `p`.
-
-        This method applies the augmentation pipeline to a subset of input samples, randomly selected
-        via a Bernoulli distribution with probability `p`
-
-        if `real_acc` is provided, the internal probability `p` is updated via the `update` method.
-        Non-augmented samples retain their original values, and the output matches the input structure.
-        """
         if real_acc is not None:
             self.update(real_acc)
 
