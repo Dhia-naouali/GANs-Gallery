@@ -34,7 +34,7 @@ class BCELoss(Loss):
 
 class WGANGPLoss(Loss):
     def __init__(self, config, lambda_gp=10, D=None):
-        self.lambda_ = lambda_gp
+        self.lambda_ = config.get("grad_penalty", 10)
         self.D = D
 
     def generator_loss(self, fake_logits, real_logits):
@@ -118,7 +118,6 @@ class R1Regularizer:
 
     def __call__(self, real_logits, real_samples):
         real_samples.require_grad_(True)
-
 
         grads = autograd.grad(
             outputs=real_logits.sum(),

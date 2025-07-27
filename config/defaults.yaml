@@ -22,7 +22,9 @@ training:
 
 loss:
   criterion: bce
-  lambda_gp: 10
+  grad_penalty: 10 # only used with wgan_gp
+  r1_penalty: 0
+  path_length_penalty: 0
 
 
 regularizers:

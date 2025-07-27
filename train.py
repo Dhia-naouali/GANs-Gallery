@@ -23,7 +23,8 @@ from src.utils import (
     CheckpointManager,
     generate_sample_images,
     save_sample_images,
-    init_model_params
+    init_model_params,
+    R1Regularizer
 )
 from src.models import setup_models
 from src.data import setup_dataloader, AdaptiveDiscriminatorAugmentation
@@ -127,6 +128,11 @@ class Trainer:
             self.config.loss,
             D=self.D if self.config.loss.criterion == "wgan_gp" else None
         )
+        
+        self.r1_regularizer = None
+        if r1_penalty := self.config.loss.get("r1_penalty", 0):
+            self.r1_regularizer = R1Regularizer(r1_penalty)
+        
 
 
     def train_step(self, real_images):
@@ -169,6 +175,9 @@ class Trainer:
             D_loss = self.criterion.discriminator_loss(fake_logits, real_logits)
             if self.config.loss.criterion == "wgan_gp":
                 D_loss += self.criterion.gradient_penalty(fake_images, real_images)
+        
+        if self.r1_regularizer:
+            D_loss += self.r1_regularizer(real_logits, real_images)
         
         self.D_scaler.scale(D_loss).backward()
         self.D_scaler.step(self.D_optimizer)
