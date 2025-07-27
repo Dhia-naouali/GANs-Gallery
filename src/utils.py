@@ -288,11 +288,12 @@ def init_model_params(model, init_scheme="normal", gain=0.02):
                     nn.init.orthogonal_(module.weight.data, gain=gain)
                 case _:
                     raise Exception(f"{init_scheme} not implemented")
-            
+                    
             if hasattr(module, "bias") and module.bias is not None:
-                nn.init.constant_(module.bias.data, 0.0)
+                nn.init.zeros_(module.bias.data, 0.0)
+        
         elif "Norm" in modulename and hasattr(module, "weight"): # just to dodge pixel norm
             nn.init.normal_(module.weight.data, 1.0, gain)
-            nn.init.constant_(module.bias.data, 0.0)
+            nn.init.zeros_(module.bias.data, 0.0)
     
     model.apply(init_func)
