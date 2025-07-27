@@ -35,7 +35,6 @@ class Trainer:
     def __init__(self, config):
         # regularizers
         # compile ?
-        self.device=torch.device("cuda:0")
 
         self.config = config
         seed_all() # seed dali
@@ -70,8 +69,8 @@ class Trainer:
 
 
 
-        self.G_scaler = GradScaler(device=self.device)
-        self.D_scaler = GradScaler(device=self.device)
+        self.G_scaler = GradScaler()
+        self.D_scaler = GradScaler()
 
         self.checkpoint_manager = CheckpointManager(
             self.config.checkpoint_dir,
@@ -82,7 +81,7 @@ class Trainer:
         )
 
         self.tracker = MetricsTracker(log_freq=self.config.wandb.log_freq)
-        self.NOISE = torch.randn(16, self.config.model.lat_dim, device=self.device)
+        self.NOISE = torch.randn(16, self.config.model.lat_dim)
 
         
 
@@ -129,7 +128,7 @@ class Trainer:
         bs = real_images.size(0)
         
         for _ in range(self.n_critic):
-            noise = torch.randn(bs, self.config.model.lat_dim, device=self.device)
+            noise = torch.randn(bs, self.config.model.lat_dim)
             # using the same samples for multiple D steps, at least let's introduce some augs
             if self.ada:
                 real_images = self.ada(real_images)
@@ -141,7 +140,7 @@ class Trainer:
 
             self.D_scheduler.step()
         
-        noise = torch.randn(bs, self.config.model.lat_dim, device=self.device)
+        noise = torch.randn(bs, self.config.model.lat_dim)
         G_loss = self.G_train_step(noise, real_logits)
         self.G_scheduler.step()
 
@@ -155,7 +154,7 @@ class Trainer:
 
     def D_train_step(self, noise, real_images):
         self.D.zero_grad()
-        with autocast(device_type=self.device.type):
+        with autocast(device_type="cuda"):
             real_images = real_images.detach().requires_grad_(True)
             real_logits = self.D(real_images)
 
@@ -180,7 +179,7 @@ class Trainer:
     def G_train_step(self, noise, real_logits):
         self.G.zero_grad()
 
-        with autocast(device_type=self.device.type):
+        with autocast(device_type="cuda"):
             fake_images = self.G(noise)
             fake_logits = self.D(fake_images)
 
@@ -202,7 +201,7 @@ class Trainer:
 
         for batch_idx, real_images in enumerate(pbar):
             real_images = real_images[0]["images"]
-            real_images = real_images.to(self.device)
+            real_images = real_images
             step_metrics = self.train_step(real_images)
             self.tracker.log(step_metrics, batch_idx, pbar=pbar)
             

@@ -59,7 +59,6 @@ def data_pipeline(root_dir, image_size, target_subdir=None):
 
 
 def setup_dataloader(config):
-    
     *root_dir, target_subdir = config.data.get("root_dir", "data/afhq/cat").split(os.sep)
     root_dir = os.sep.join(root_dir)
     pipe = data_pipeline(
@@ -172,16 +171,14 @@ class AdaptiveDiscriminatorAugmentation(AugmentationSequential):
         else:
             self.p = min(self.p + self.adjustment_speed, self.max_p)
 
-    def _get_inputs_metadata(self, inputs: _inputs_type, data_keys: _data_keys_type) -> Tuple[int, Device]:
+    def _get_inputs_metadata(self, inputs: _inputs_type, data_keys: _data_keys_type) -> int:
         if isinstance(inputs, dict):
             key = data_keys[0]
             batch_size = inputs[key].size(0)
-            device = inputs[key].device
         else:
             batch_size = inputs.size(0)
-            device = inputs.device
 
-        return batch_size, device
+        return batch_size
 
     def _sample_inputs(self, inputs: _inputs_type, data_keys: _data_keys_type, p_tensor: Tensor) -> _inputs_type:
         if isinstance(inputs, dict):
@@ -234,9 +231,9 @@ class AdaptiveDiscriminatorAugmentation(AugmentationSequential):
                 ]
             )
 
-        batch_size, device = self._get_inputs_metadata(inputs, data_keys=data_keys)
+        batch_size = self._get_inputs_metadata(inputs, data_keys=data_keys)
 
-        p_tensor = torch.bernoulli(torch.full((batch_size,), self.p, dtype=torch.float32, device=device)).bool()
+        p_tensor = torch.bernoulli(torch.full((batch_size,), self.p, dtype=torch.float32)).bool()
 
         if not p_tensor.any():
             return inputs
