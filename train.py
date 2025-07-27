@@ -51,6 +51,7 @@ class Trainer:
         self.ada = AdaptiveDiscriminatorAugmentation(
             target_acc=config.ADA.ada_target_acc
         ) if config.ADA.use_ADA else None
+        self.real_acc = None
         # self.ada.transform = torch.compile(self.ada.transform, mode="max-autotune-no-cudagraphs")
         
         # proper weights_init (muP ?), hold on buddy brb
@@ -131,12 +132,9 @@ class Trainer:
             noise = torch.randn(bs, self.config.model.lat_dim)
             # using the same samples for multiple D steps, at least let's introduce some augs
             if self.ada:
-                real_images = self.ada(real_images)
+                real_images = self.ada(real_images, real_acc=self.real_acc)
 
             D_loss, fake_acc, real_acc, real_logits = self.D_train_step(noise, real_images)
-
-            if self.ada:
-                self.ada.update(real_acc)
 
             self.D_scheduler.step()
         
@@ -159,7 +157,8 @@ class Trainer:
             real_logits = self.D(real_images)
 
             with torch.no_grad():
-                fake_images = self.G(noise).detach()
+                fake_images = self.G(noise)
+                fake_images = self.ada(fake_images, real_acc=self.real_acc).detach()
             fake_logits = self.D(fake_images)
             
             D_loss = self.criterion.discriminator_loss(fake_logits, real_logits)
@@ -174,6 +173,7 @@ class Trainer:
             fake_acc = (fake_logits < 0).float().mean().item()
             real_acc = (real_logits > 0).float().mean().item()
 
+        self.real_acc = real_acc
         return D_loss.item(), fake_acc, real_acc, real_logits
 
     def G_train_step(self, noise, real_logits):
