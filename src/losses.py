@@ -1,5 +1,3 @@
-# starting with the basics
-
 import torch
 from torch import nn, autograd
 import torch.nn.functional as F
@@ -67,8 +65,6 @@ class WGANGPLoss(Loss):
         grads = grads.reshape(bs, -1)
         grad_norm = grads.norm(2, dim=1)
         return self.lambda_ * ((grad_norm - 1) ** 2).mean()
-    
-
 
 
 class RelavisticAverageGANLoss(Loss):
@@ -101,7 +97,6 @@ class RelavisticAverageGANLoss(Loss):
         )
 
         return real_loss + fake_loss
-    
 
 
 LOSSES = {
@@ -109,8 +104,6 @@ LOSSES = {
     "wgan_gp": WGANGPLoss,
     "ragan": RelavisticAverageGANLoss
 }
-    
-
 
 
 def setup_loss(config, D=None):
@@ -119,31 +112,23 @@ def setup_loss(config, D=None):
     return LOSSES[config.get("criterion", "bce")](config)
 
 
-# sorry r2 gotta got, turns out it's that stable, and since the penalty introduction only r1 been around
 class R1Regularizer:
     def __init__(self, lambda_r1=10):
         self.lambda_ = lambda_r1
 
-    def __call__(self, fake_logits, real_logits, fake_samples, real_samples):
-        fake_samples.require_grad_(True)
+    def __call__(self, real_logits, real_samples):
         real_samples.require_grad_(True)
 
-        return self.lambda_ * self.r2_gp(real_logits, real_samples)
 
-
-    def r2_gp(self, logits, samples):
         grads = autograd.grad(
-            outputs=logits,
-            inputs=samples,
+            outputs=real_logits.sum(),
+            inputs=real_samples,
             create_graph=True,
             retain_graph=True,
             only_inputs=True,
         )[0]
-
-        return grads.view(
-            grads.size(0), -1
-            ).norm(2, dim=1).pow(2).mean()
-    
+        grads = grads.view(grads.size(0), -1).norm(2, dim=1).pow(2).mean()
+        return self.lambda_ * grads    
 
 
 # class PathLengthREgularizer:
