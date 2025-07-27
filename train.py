@@ -12,7 +12,7 @@ import time
 import hydra
 import wandb
 from tqdm import tqdm
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import OmegaConf
 
 from src.utils import (
     seed_all,
