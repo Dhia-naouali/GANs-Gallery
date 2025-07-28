@@ -24,7 +24,8 @@ from src.utils import (
     generate_sample_images,
     save_sample_images,
     init_model_params,
-    R1Regularizer
+    R1Regularizer,
+    PathLengthREgularizer
 )
 from src.models import setup_models
 from src.data import setup_dataloader, AdaptiveDiscriminatorAugmentation
@@ -130,9 +131,12 @@ class Trainer:
         )
         
         self.r1_regularizer = None
+        self.path_length_regularizer = None
         if r1_penalty := self.config.loss.get("r1_penalty", 0):
             self.r1_regularizer = R1Regularizer(r1_penalty)
         
+        if path_length_penalty := self.config.loss.get("path_length_penalty", 0):
+            self.path_length_regularizer = PathLengthREgularizer(path_length_penalty)
 
 
     def train_step(self, real_images):
@@ -176,8 +180,8 @@ class Trainer:
             if self.config.loss.criterion == "wgan_gp":
                 D_loss += self.criterion.gradient_penalty(fake_images, real_images)
         
-        if self.r1_regularizer:
-            D_loss += self.r1_regularizer(real_logits, real_images)
+            if self.r1_regularizer:
+                D_loss += self.r1_regularizer(real_logits, real_images)
         
         self.D_scaler.scale(D_loss).backward()
         self.D_scaler.step(self.D_optimizer)
@@ -194,10 +198,13 @@ class Trainer:
         self.G.zero_grad()
 
         with autocast(device_type="cuda"):
-            fake_images = self.G(noise)
+            fake_images, w = self.G(noise)
             fake_logits = self.D(fake_images)
 
             G_loss = self.criterion.generator_loss(fake_logits, real_logits)
+            if self.path_length_regularizer:
+                G_loss += self.path_length_regularizer(fake_images, self.G._w)
+
         self.G_scaler.scale(G_loss).backward()
         self.G_scaler.step(self.G_optimizer)
         self.G_scaler.update()
