@@ -10,8 +10,9 @@ from tqdm import tqdm
 
 
 class Evaluator:
-    def __init__(self, G, config, device): # may be used post training on cpu (ig ?)
+    def __init__(self, G, dataloader, config, device): # may be used post training on cpu (ig ?)
         self.G = G.eval()
+        self.dataloader = dataloader
         self.config = config
         self.device = device
         
@@ -40,7 +41,8 @@ class Evaluator:
             samples = next(dataloader)[0]["image"] # to check if compatible with dali
             yield (samples * .5 + .5).byte()
             
-            
+
+    @torch.no_grad
     def compute_fid(self, fake_images, real_images):
         self.FID.reset()
         self.FID.update(fake_images, real=False)
@@ -48,35 +50,44 @@ class Evaluator:
         fid_mean, fid_std = self.FID.compute().item()
         return fid_mean.item(), fid_std.item()
 
-        
+
+    @torch.no_grad
     def compute_inception_score(self, fake_images):
         self.IS.reset()
         self.IS.update(fake_images)
-        return self.IS.compute()
-        
+        mean_is, std_is = self.IS.compute()
+        return mean_is.item(), std_is.item()
     
+    @torch.no_grad
     def compute_kid(self, fake_images, real_images):
         self.KID.reset()
         self.KID.update(fake_images, real=False)
         self.KID.update(real_images, real=True)
-        kid_mean, kid_std =  self.KID.compute()
-        return kid_mean.item(), kid_std.item()
+        mean_kid, std_kid =  self.KID.compute()
+        return mean_kid.item(), std_kid.item()
         
         
     @torch.no_grad        
     def compute_lpips_diversity(self, fake_images, real_images):
-        return self.LPIPS(fake_images, real_images)
+        return self.LPIPS(fake_images, real_images).mean().item()
     
-    def evaluta(self, dataloader, batch_size, num_batches):
-        fake_images = self.generate_samples()
-        real_images = self.load_samples()
+    
+    def evalute(self, batch_size, num_batches):
+        fake_gen = self.generate_samples(batch_size, num_batches)
+        real_gen = self.load_samples(batch_size, num_batches)
 
 
-        for humm in num_batches:
-            fid = self.compute_fid(fake_images, real_images)
-            inception_score = self.compute_inception_score(fake_images)
-            lpips = self.compute_lpips_diversity(fake_images, real_images)
-            kid = self.compute_kit(fake_images, real_images)
+
+        for humm in range(num_batches):
+            fake_images = next(fake_gen)
+            real_images = next(real_gen)
+
+            # run in parallel ?
+            fid_mean, fid_std = self.compute_fid(fake_images, real_images)
+            mean_is, std_is = self.compute_inception_score(fake_images)
+            lpips_score = self.compute_lpips_diversity(fake_images, real_images)
+            mean_kid, std_kid = self.compute_kid(fake_images, real_images)
+
         
         return {
             "FID": ,

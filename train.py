@@ -114,8 +114,7 @@ class Trainer:
                 ),
         )
 
-        # total_steps = len(self.dataloader) * len(self.dataloader.dataset)
-        total_steps = 5000
+        total_steps = self.dataloader._size
         self.G_scheduler = setup_scheduler(self.G_optimizer, total_steps, self.config)
         self.D_scheduler = setup_scheduler(self.D_optimizer, total_steps * self.n_critic, self.config)
 
@@ -141,7 +140,6 @@ class Trainer:
         
         for _ in range(self.n_critic):
             noise = torch.randn(bs, self.config.model.lat_dim)
-            # using the same samples for multiple D steps, at least let's introduce some augs
             if self.ada:
                 real_images = self.ada(real_images, real_acc=self.real_acc)
 
@@ -226,7 +224,6 @@ class Trainer:
 
 
     def train(self):
-        # main training loop script
         for epoch in range(1, self.config.training.epochs + 1):
             epoch_metrics = self.train_epoch(epoch, self.config.training.epochs)
 
