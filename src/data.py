@@ -10,8 +10,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import torch
 
-from kornia.core import Device, Tensor  # noqa: TID252
-from kornia.augmentation import (  # noqa: TID252
+from kornia.core import Device, Tensor
+from kornia.augmentation import (
     AugmentationSequential,
     ColorJitter,
     ImageSequential,
@@ -21,8 +21,8 @@ from kornia.augmentation import (  # noqa: TID252
     RandomHorizontalFlip,
     RandomRotation90,
 )
-from kornia.augmentation.base import _AugmentationBase  # noqa: TID252
-from kornia.augmentation.container.params import ParamItem  # noqa: TID252
+from kornia.augmentation.base import _AugmentationBase
+from kornia.augmentation.container.params import ParamItem
 
 _data_keys_type = List[str]
 _inputs_type = Union[Tensor, Dict[str, Tensor]]
