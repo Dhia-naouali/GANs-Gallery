@@ -194,7 +194,7 @@ class Trainer:
         self.G.zero_grad()
 
         with autocast(device_type="cuda"):
-            fake_images, w = self.G(noise)
+            fake_images = self.G(noise)
             fake_logits = self.D(fake_images)
 
             G_loss = self.criterion.generator_loss(fake_logits, real_logits)

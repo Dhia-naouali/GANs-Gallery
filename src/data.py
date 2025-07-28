@@ -33,7 +33,7 @@ from nvidia.dali import pipeline_def, fn, types, Pipeline
 from nvidia.dali.plugin.pytorch import DALIGenericIterator
 
 
-@pipeline_def(batch_size=8, enable_conditionals=False)
+@pipeline_def(batch_size=8, enable_conditionals=False, prefetch_queue_depth=2, num_threads=8, exec_async=True, exec_pipelined=True, exec_dynamic=False)
 def data_pipeline(root_dir, image_size, target_subdir=None):
     image_files, _ = fn.readers.file(
         file_root=root_dir,
@@ -41,7 +41,11 @@ def data_pipeline(root_dir, image_size, target_subdir=None):
         random_shuffle=True, 
         name="Reader"
     )
-    images = fn.decoders.image(image_files, device="mixed", output_type=types.RGB)
+    images = fn.decoders.image(image_files, device="mixed", output_type=types.RGB,
+    memory_stats=True,
+    device_memory_padding=64<<20,
+    host_memory_padding=8<<20                           
+    )
     images = fn.resize(
         images,
         resize_x=image_size,
@@ -68,7 +72,7 @@ def setup_dataloader(config):
         batch_size=config.training.get("batch_size", 32),
         image_size=config.training.get("image_size", 256),
         device_id=0,
-        num_threads=os.cpu_count(),
+        num_threads=32,
     )
     pipe.build()
     return DALIGenericIterator(
