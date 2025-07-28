@@ -24,12 +24,10 @@ from src.utils import (
     generate_sample_images,
     save_sample_images,
     init_model_params,
-    R1Regularizer,
-    PathLengthREgularizer
 )
 from src.models import setup_models
 from src.data import setup_dataloader, AdaptiveDiscriminatorAugmentation
-from src.losses import setup_loss
+from src.losses import setup_loss, R1Regularizer, PathLengthREgularizer
 
 
 torch.set_default_device("cuda:0")

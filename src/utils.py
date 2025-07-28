@@ -276,7 +276,7 @@ class CheckpointManager:
 def init_model_params(model, init_scheme="normal", gain=0.02):
     def init_func(module):
         modulename = module.__class__.__name__
-        if hasattr(module, "weight") and "Conv" in modulename or "Linear" in modulename:
+        if hasattr(module, "weight") and ("Conv" in modulename or "Linear" in modulename):
             match init_scheme:
                 case "normal":
                     nn.init.normal_(module.weight.data, 0., gain)
@@ -290,10 +290,10 @@ def init_model_params(model, init_scheme="normal", gain=0.02):
                     raise Exception(f"{init_scheme} not implemented")
                     
             if hasattr(module, "bias") and module.bias is not None:
-                nn.init.zeros_(module.bias.data, 0.0)
+                nn.init.zeros_(module.bias.data)
         
-        elif "Norm" in modulename and hasattr(module, "weight"): # just to dodge pixel norm
+        elif hasattr(module, "weight") and "Norm" in modulename and module.weight is not None: # to dodge pixelnorm & instancenorm layers
             nn.init.normal_(module.weight.data, 1.0, gain)
-            nn.init.zeros_(module.bias.data, 0.0)
+            nn.init.zeros_(module.bias.data)
     
     model.apply(init_func)
