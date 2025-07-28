@@ -117,7 +117,7 @@ class R1Regularizer:
         self.lambda_ = lambda_r1
 
     def __call__(self, real_logits, real_samples):
-        real_samples.require_grad_(True)
+        real_samples.requires_grad_(True)
 
         grads = autograd.grad(
             outputs=real_logits.sum(),
