@@ -24,3 +24,14 @@ the aim of this project is to create more of'em
 ```bash
 python train.py training.epochs=160 optimizer.D_lr=8e-5 optimizer.G_lr=12e-5
 ```
+
+
+## Optimization
+#### Data pipeline: Loading + Augmentation 3x speedup (minima optimization for both)
+
+in the `data-optimization branch` I switched from the conventional `open-cv`, `albumentation` and `pytorch`'s DataLoaders
+to `Nvidia-dali`: data loading (nvidia never failed to amaze me) and `Kornia` augmentation on device a tresure I found
+
+
+#### concurrent computation of losses and penalties (when possible :'))
+[current]
