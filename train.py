@@ -55,7 +55,7 @@ class Trainer:
 
 
         self.ada = AdaptiveDiscriminatorAugmentation(
-            target_acc=config.ADA.ada_target_acc
+            # target__real_acc=config.ADA.ada_target_acc
         ) if config.ADA.use_ADA else None
         self.real_acc = None
         # self.ada.transform = torch.compile(self.ada.transform, mode="max-autotune-no-cudagraphs")
@@ -72,8 +72,6 @@ class Trainer:
         self.n_critic = self.config.training.get("n_critic", 1)
         self.setup_optimizers()
         self.setup_loss_and_regs()
-
-
 
         self.G_scaler = GradScaler()
         self.D_scaler = GradScaler()
