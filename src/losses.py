@@ -130,10 +130,28 @@ class R1Regularizer:
         return self.lambda_ * grads    
 
 
-# class PathLengthREgularizer:
-#     def __init__(self, lambda_path_len=2, path_len_decay=1e-2):
-#         self.lambda_ = lambda_path_len
-#         self.decay_ = path_len_decay
-#         self.mean_ = torch.ones(1)
+class PathLengthREgularizer:
+    def __init__(self, lambda_path_len=2, path_len_decay=1e-2):
+        self.lambda_ = lambda_path_len
+        self.decay_ = path_len_decay
+        self.mean_ = torch.ones(1)
 
-#     def __call__(self, fake_images, lat_):
+    def __call__(self, fake_images, w):
+        y_hat = (
+            (fake_images.size(2) * fake_images.size(3)) ** .5
+        ) * torch.randn_like(fake_images)
+        
+        s = (fake_images * y_hat).sum()
+        grads = autograd.grad(
+            outputs=s,
+            inputs=w,
+            create_graph=True,
+            only_inputs=True
+        )[0].norm(2, dim=1)
+        
+        if self.plp_ema is not None:
+            self.plp_ema = self.lambda_ema * self.plp_ema + (1 - self.lambda_ema) * grads.mean().detach()
+        else:
+            self.plp_ema = grads.mean().detach()
+            
+        return self.lambda_pl * ((grads - self.plp_ema) ** 2).mean()
