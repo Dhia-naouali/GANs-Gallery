@@ -21,25 +21,19 @@ training:
   n_critic: 1
 
 loss:
-  criterion: bce
-  grad_penalty: 10 # only used with wgan_gp
-  r1_penalty: 0
-  path_length_penalty: 0
-
-
-regularizers:
-  gradient_penalty: 0.0
-  path_length_penalty: 0.0
-  r1_penalty: 0.0
+  criterion: bce # bce, wgan_gp, ragan
+  grad_penalty: 10 # > 0 to use, only used with wgan_gp
+  r1_penalty: 0 # > 0 to use
+  path_length_penalty: 0 # > 0 to use
 
 
 seed: 12
-device: cuda
+device: cuda # trivial, cuda is used by default in the current version
 
 ADA:
   use_ADA: True
   ada_target_acc: 0.6
-  horizontal_flip: true
+  horizontal_flip: true # to include others, ADA default is used internally
 
 log_dir: ./logs
 checkpoint_dir: ./checkpoints
