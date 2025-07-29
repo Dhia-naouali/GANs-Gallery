@@ -43,10 +43,10 @@ class BCELoss(Loss):
 
 
 class WGANGPLoss(Loss):
-    def __init__(self, config, batch_size, label_smoothing, lambda_gp=10, D=None):
+    def __init__(self, batch_size, label_smoothing, lambda_gp=10, D=None):
         super().__init__()
         self.batch_size = batch_size
-        self.lambda_ = config.get("grad_penalty", 10)
+        self.lambda_ = lambda_gp
         self.D = D
         self.register_buffer(
             "real_labels", 
@@ -86,7 +86,7 @@ class WGANGPLoss(Loss):
 
 
 class RelavisticAverageGANLoss(Loss):
-    def __init__(self, config, batch_size, label_smoothing):
+    def __init__(self, batch_size, label_smoothing):
         super().__init__()
         self.criterion = nn.BCEWithLogitsLoss()
         self.register_buffer(
@@ -149,12 +149,12 @@ def setup_loss(config, D=None):
     loss_config = {
         "batch_size": batch_size,
         "label_smoothing": label_smoothing,
-        "lambda_gp": lambda_gp
     }
-    if D is not None:
+    if config.loss.criterion == "wgan_gp":
+        loss_config["lambda_gp"] = lambda_gp
         loss_config["D"] = D
     
-    return LOSSES[config.get("criterion", "bce")](**loss_config)
+    return LOSSES[config.loss.get("criterion", "bce")](**loss_config)
 
 
 class R1Regularizer:
