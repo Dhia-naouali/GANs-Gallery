@@ -160,7 +160,7 @@ class Trainer:
 
             fake_logits = self.D(fake_images)
             D_loss = self.criterion.discriminator_loss(fake_logits, real_logits)
-            
+
 
         #################################################################
         # path length penalty, penalties stream
@@ -188,18 +188,18 @@ class Trainer:
             G_loss = self.criterion.generator_loss(fake_logits, real_logits)
 
         
-        #################################################################
-        # R1 & Gradient penalty, penalties stream
-        #################################################################
-        if self.r1_regularizer or self.gradient_penalty_:
-            with torch.cuda.stream(self.penalties_stream):
-                if self.r1_regularizer:
-                    r1_penalty = self.r1_regularizer(real_logits, real_images)
-                if self.gradient_penalty_:
-                    gradient_penalty = self.criterion.gradient_penalty(fake_images, real_images)
+        # #################################################################
+        # # R1 & Gradient penalty, penalties stream
+        # #################################################################
+        # if self.r1_regularizer or self.gradient_penalty_:
+        #     with torch.cuda.stream(self.penalties_stream):
+        #         if self.r1_regularizer:
+        #             r1_penalty = self.r1_regularizer(real_logits, real_images)
+        #         if self.gradient_penalty_:
+        #             gradient_penalty = self.criterion.gradient_penalty(fake_images, real_images)
 
-            main_stream = torch.cuda.current_stream()
-            main_stream.wait_stream(self.penalties_stream)
+        #     main_stream = torch.cuda.current_stream()
+        #     main_stream.wait_stream(self.penalties_stream)
 
 
         D_loss += r1_penalty + gradient_penalty
