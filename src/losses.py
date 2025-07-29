@@ -33,14 +33,14 @@ class BCELoss(Loss):
         )
 
     def generator_loss(self, fake_logits, real_logits):
-        return self.criterion(fake_logits, self;_real_labels)
+        return self.criterion(fake_logits, self._real_labels)
 
     def discriminator_loss(self, fake_logits, real_logits):
         real_loss = self.criterion(real_logits, self.real_labels)
         fake_loss = self.criterion(fake_logits, self.fake_labels)
 
         return (real_loss + fake_loss) * .5
-    
+
 
 class WGANGPLoss(Loss):
     def __init__(self, config, batch_size, label_smoothing, lambda_gp=10, D=None):
@@ -62,7 +62,8 @@ class WGANGPLoss(Loss):
 
     def discriminator_loss(self, fake_logits, real_logits):
         return fake_logits.mean() - real_logits.mean()
-    
+
+
     def gradient_penalty(self, fake_samples, real_samples):
         alpha = torch.rand(self.batch_size, 1, 1, 1)
         interpolated_x = alpha * real_samples + (1 - alpha) * fake_samples
@@ -99,7 +100,7 @@ class RelavisticAverageGANLoss(Loss):
         self.register_buffer(
             "fake_labels", 
             torch.full(
-                size=(batch_size, 1), 
+                size=(batch_size, 1),
                 fill_value=label_smoothing
             )
         )
