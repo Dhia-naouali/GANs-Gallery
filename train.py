@@ -83,14 +83,11 @@ class Trainer:
         self.tracker = MetricsTracker(log_freq=self.config.wandb.log_freq)
         self.NOISE = torch.randn(16, self.config.model.lat_dim)
         
-        self.stream1 = torch.cuda.Stream()
-        self.stream2 = torch.cuda.Stream()
+        self.penalties_stream = torch.cuda.Stream()
 
         self.g_loss_computed = torch.cuda.Event()
         self.fake_images_generated = torch.cuda.Event()
         self.real_logits_r1_computed = torch.cuda.Event()
-
-
         
 
     def setup_optimizers(self):
@@ -140,80 +137,73 @@ class Trainer:
             self.path_length_regularizer = PathLengthREgularizer(path_length_penalty)
 
         self.gradient_penalty_ = self.config.loss.get("gradient_penalty", False)
-            
-        
+
+
     def train_step(self, real_images):
         self.G.zero_grad()
         self.D.zero_grad()
+        path_length_penalty = 0
+        r1_penalty = 0
+        gradient_penalty = 0
 
+        #################################################################
+        # Discriminator loss main stream
+        #################################################################
         noise = torch.randn(self.batch_size, self.G.lat_dim)
-        if self.ada:
-            real_images = self.ada(real_images, self.real_acc)
+        with autocast(device_type="cuda"):
+            if self.ada:
+                real_images = self.ada(real_images, real_acc=self.real_acc)
+
+            real_logits = self.D(real_images)
+            with torch.no_grad():   
+                fake_images = self.ada(self.G(noise)) if self.ada else self.G(noise)
+
+            fake_logits = self.D(fake_images)
+            D_loss = self.criterion.discriminator_loss(fake_logits, real_logits)
+            
+
+        #################################################################
+        # path length penalty, penalties stream
+        #################################################################
+        if self.path_length_regularizer:
+            with torch.cuda.stream(self.penalties_stream):
+                path_length_penalty = self.path_length_regularizer(fake_images, self.G._w)
+
+            main_stream = torch.cuda.current_stream()
+            main_stream.wait_stream(self.penalties_stream)
+
+
+
+
+        #################################################################
+        # Generator loss, main stream
+        #################################################################
+        with autocast(device_type="cuda"):
+            noise = torch.randn(self.batch_size, self.G.lat_dim)
+            fake_images = self.G(noise)
+            fake_logits = self.D(fake_images)
+
+            G_loss = self.criterion.generator_loss(fake_logits, real_logits)
+
         
-
-        # with torch.cuda.stream(self.sream1), autocast(device_type="cuda"):
-        #     real_logits = self.D(real_images)
-        #     fake_images = self.G(noise)
-        #     self.fake_images_generated.recorde(self.stream1)
-        #     fake_logits = self.D(fake_images)
-        #     G_loss = self.criterion.generator_loss(fake_logits, real_logits)
-        #     D_loss = self.criterion.discriminator_loss(fake_logits, real_logits)
-            
-            
-            
-        # with torch.cuda.stream(self.stream2), autocast(device_type="cuda"):
-        #     self.stream2.wait_event(self.fake_images_generated)
-        #     if self.path_length_regularizer:
-        #         path_length_penalty = self.path_length_regularizer(fake_images)
-        #     if 
-        #     gradient_penalty = self.criterion.gradient_penalty(fake_images, real_images)
-        #     if 
-        #     r1_penalty = self.r1_regularizer(real_logits, real_images)
-
-        real_logits = torch.zeros(self.batch_size, 1)
-        with torch.cuda.stream(self.stream1), autocast(device_type="cuda"):
-                fake_images = self.G(noise)
-                if self.ada:
-                    fake_images = self.ada(fake_images, real_acc=self.real_acc)
-                self.fake_images_generated.record(self.stream1)
-
-                fake_logits = self.D(fake_images)
-
-                self.stream1.wait_event(self.real_logits_r1_computed)
-                G_loss = self.criterion.generator_loss(fake_logits, real_logits)                
-                self.g_loss_computed.record(self.stream1)
-
-                D_loss = self.criterion.discriminator_loss(fake_logits, real_logits)
-
-
-        with torch.cuda.stream(self.stream2), autocast(device_type="cuda"):
-                real_logits = self.D(real_images)
+        #################################################################
+        # R1 & Gradient penalty, penalties stream
+        #################################################################
+        if self.r1_regularizer or self.gradient_penalty_:
+            with torch.cuda.stream(self.penalties_stream):
                 if self.r1_regularizer:
                     r1_penalty = self.r1_regularizer(real_logits, real_images)
-                self.real_logits_r1_computed.record(self.stream2)
-                
                 if self.gradient_penalty_:
-                    self.stream2.wait_event(self.fake_images_generated)
                     gradient_penalty = self.criterion.gradient_penalty(fake_images, real_images)
-                
-                if self.path_length_regularizer:
-                    # self.stream2.wait_event(self.g_loss_computed)
-                    path_length_penalty = self.path_length_regularizer(fake_images, self.G._w)
 
-        main_stream = torch.cuda.current_stream()
-        print(real_logits.max(), real_logits.min())
-        main_stream.wait_stream(self.stream1)
-        main_stream.wait_stream(self.stream2)
+            main_stream = torch.cuda.current_stream()
+            main_stream.wait_stream(self.penalties_stream)
 
-        if self.gradient_penalty_:
-            D_loss += gradient_penalty
-        if self.r1_regularizer:
-            D_loss += r1_penalty
+
+        D_loss += r1_penalty + gradient_penalty
+        G_loss += path_length_penalty
         
-        if self.path_length_regularizer:
-            G_loss += path_length_penalty
-            
-            
+        
         self.D_scaler.scale(D_loss).backward()
         self.D_scaler.step(self.D_optimizer)
         self.D_scaler.update()
@@ -234,76 +224,6 @@ class Trainer:
             "real_acc": real_acc,
             "fake_acc": fake_acc,
         }
-
-
-    def _train_step(self, real_images):
-        # safe to have out of the loop as long as we're using drop_last in the loader
-                    
-        noise = torch.randn(self.batch_size, self.config.model.lat_dim, dtype=torch.float16)
-        D_loss, fake_acc, real_acc, real_logits = self.D_train_step(noise, real_images)
-        self.D_scheduler.step()
-        
-        noise = torch.randn(self.batch_size, self.config.model.lat_dim)
-        G_loss = self.G_train_step(noise, real_logits)
-        self.G_scheduler.step()
-
-        return {
-            "G_loss": G_loss,
-            "D_loss": D_loss,
-            "real_acc": real_acc,
-            "fake_acc": fake_acc,
-        }
-
-
-    def D_train_step(self, noise, real_images):
-        self.D.zero_grad()
-
-        with autocast(device_type="cuda"):
-            if self.ada:
-                real_images = self.ada(real_images, real_acc=self.real_acc)
-
-            real_images = real_images.detach().requires_grad_(True)
-            real_logits = self.D(real_images)
-
-            with torch.no_grad():
-                fake_images = self.G(noise)
-                fake_images = self.ada(fake_images, real_acc=self.real_acc).detach()
-            fake_logits = self.D(fake_images)
-            
-            D_loss = self.criterion.discriminator_loss(fake_logits, real_logits)
-            if self.config.loss.criterion == "wgan_gp":
-                D_loss += self.criterion.gradient_penalty(fake_images, real_images)
-        
-            if self.r1_regularizer:
-                D_loss += self.r1_regularizer(real_logits, real_images)
-        
-        self.D_scaler.scale(D_loss).backward()
-        self.D_scaler.step(self.D_optimizer)
-        self.D_scaler.update()
-
-        with torch.no_grad():
-            fake_acc = (fake_logits < 0).float().mean().item()
-            real_acc = (real_logits > 0).float().mean().item()
-
-        self.real_acc = real_acc
-        return D_loss.item(), fake_acc, real_acc, real_logits
-
-    def G_train_step(self, noise, real_logits):
-        self.G.zero_grad()
-
-        with autocast(device_type="cuda"):
-            fake_images = self.G(noise)
-            fake_logits = self.D(fake_images)
-
-            G_loss = self.criterion.generator_loss(fake_logits, real_logits)
-            if self.path_length_regularizer:
-                G_loss += self.path_length_regularizer(fake_images, self.G._w)
-
-        self.G_scaler.scale(G_loss).backward()
-        self.G_scaler.step(self.G_optimizer)
-        self.G_scaler.update()
-        
-        return G_loss.item()
 
 
     def train_epoch(self, epoch, epochs):
