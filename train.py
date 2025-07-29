@@ -117,7 +117,7 @@ class Trainer:
 
     def setup_loss_and_regs(self):
         self.criterion = setup_loss(
-            self.config.loss,
+            self.config,
             D=self.D if self.config.loss.criterion == "wgan_gp" else None
         )
         

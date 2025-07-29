@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 
-class Loss:
+class Loss(nn.Module):
     def generator_loss(self, fake_logits):
         raise NotImplementedError
     
@@ -13,29 +13,49 @@ class Loss:
 
 
 class BCELoss(Loss):
-    def __init__(self, config, label_smoothing=0.):
+    def __init__(self, batch_size=32, label_smoothing=0.):
         super().__init__()
         self.criterion = nn.BCEWithLogitsLoss()
-        self.label_smoothing = label_smoothing
+        self.register_buffer(
+            "real_labels", 
+            torch.full(
+                size=(batch_size, 1), 
+                fill_value=1-label_smoothing
+            )
+        )
+
+        self.register_buffer(
+            "fake_labels", 
+            torch.full(
+                size=(batch_size, 1), 
+                fill_value=label_smoothing
+            )
+        )
 
     def generator_loss(self, fake_logits, real_logits):
-        labels = torch.ones_like(fake_logits)
-        return self.criterion(fake_logits, labels)
+        return self.criterion(fake_logits, self;_real_labels)
 
     def discriminator_loss(self, fake_logits, real_logits):
-        real_labels = torch.full_like(real_logits, 1.0 - self.label_smoothing)
-        fake_labels = torch.zeros_like(fake_logits)
-
-        real_loss = self.criterion(real_logits, real_labels)
-        fake_loss = self.criterion(fake_logits, fake_labels)
+        real_loss = self.criterion(real_logits, self.real_labels)
+        fake_loss = self.criterion(fake_logits, self.fake_labels)
 
         return (real_loss + fake_loss) * .5
     
 
 class WGANGPLoss(Loss):
-    def __init__(self, config, lambda_gp=10, D=None):
+    def __init__(self, config, batch_size, label_smoothing, lambda_gp=10, D=None):
+        super().__init__()
+        self.batch_size = batch_size
         self.lambda_ = config.get("grad_penalty", 10)
         self.D = D
+        self.register_buffer(
+            "real_labels", 
+            torch.full(
+                size=(batch_size, 1), 
+                fill_value=1-label_smoothing
+            )
+        )
+
 
     def generator_loss(self, fake_logits, real_logits):
         return -fake_logits.mean()
@@ -44,10 +64,7 @@ class WGANGPLoss(Loss):
         return fake_logits.mean() - real_logits.mean()
     
     def gradient_penalty(self, fake_samples, real_samples):
-        bs = real_samples.size(0)
-        device = real_samples.device
-
-        alpha = torch.rand(bs, 1, 1, 1, device=device)
+        alpha = torch.rand(self.batch_size, 1, 1, 1)
         interpolated_x = alpha * real_samples + (1 - alpha) * fake_samples
         interpolated_x.requires_grad_(True)
 
@@ -56,30 +73,47 @@ class WGANGPLoss(Loss):
         grads = autograd.grad(
             outputs=interpolated_logits,
             inputs=interpolated_x,
-            grad_outputs=torch.ones_like(interpolated_logits),
+            grad_outputs=self.real_labels,
             create_graph=True,
             only_inputs=True,
             retain_graph=True,
         )[0]
 
-        grads = grads.reshape(bs, -1)
+        grads = grads.reshape(self.batch_size, -1)
         grad_norm = grads.norm(2, dim=1)
         return self.lambda_ * ((grad_norm - 1) ** 2).mean()
 
 
 class RelavisticAverageGANLoss(Loss):
-    def __init__(self, config):
+    def __init__(self, config, batch_size, label_smoothing):
+        super().__init__()
         self.criterion = nn.BCEWithLogitsLoss()
+        self.register_buffer(
+            "real_labels", 
+            torch.full(
+                size=(batch_size, 1), 
+                fill_value=1-label_smoothing
+            )
+        )
+
+        self.register_buffer(
+            "fake_labels", 
+            torch.full(
+                size=(batch_size, 1), 
+                fill_value=label_smoothing
+            )
+        )
+        
 
     def generator_loss(self, fake_logits, real_logits):
         real_loss = self.criterion(
             real_logits - fake_logits.mean(),
-            torch.ones_like(real_logits)
+            self.real_labels
         )
 
         fake_loss = self.criterion(
             fake_logits - real_logits.mean(),
-            torch.zeros_like(real_logits)
+            self.fake_labels
         )
 
         return real_loss + fake_loss
@@ -88,12 +122,12 @@ class RelavisticAverageGANLoss(Loss):
     def discriminator_loss(self, fake_logits, real_logits):
         real_loss = self.criterion(
             real_logits - fake_logits.mean(),
-            torch.zeros_like(real_logits)
+            self.fake_labels
         )
 
         fake_loss = self.criterion(
             fake_logits - real_logits.mean(),
-            torch.ones_like(real_logits)
+            self.real_labels
         )
 
         return real_loss + fake_loss
@@ -107,9 +141,19 @@ LOSSES = {
 
 
 def setup_loss(config, D=None):
-    if config.criterion == "wgan_gp":
-        return LOSSES[config.get("criterion", "bce")](config, D=D)
-    return LOSSES[config.get("criterion", "bce")](config)
+    batch_size = config.training.get("batch_size", 32)
+    label_smoothing = config.loss.get("label_smoothing", 0)
+    lambda_gp = config.loss.get("grad_penalty", 0)
+    
+    loss_config = {
+        "batch_size": batch_size,
+        "label_smoothing": label_smoothing,
+        "lambda_gp": lambda_gp
+    }
+    if D is not None:
+        loss_config["D"] = D
+    
+    return LOSSES[config.get("criterion", "bce")](**loss_config)
 
 
 class R1Regularizer:
