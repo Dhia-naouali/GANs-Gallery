@@ -167,7 +167,9 @@ class Trainer:
         #################################################################
         if self.path_length_regularizer:
             with torch.cuda.stream(self.penalties_stream):
-                path_length_penalty = self.path_length_regularizer(fake_images, self.G._w)
+                w = self.G.mapping(noise)
+                fake_images_ = self.G.synthesis(w)
+                path_length_penalty = self.path_length_regularizer(fake_images_, w)
 
             main_stream = torch.cuda.current_stream()
             main_stream.wait_stream(self.penalties_stream)

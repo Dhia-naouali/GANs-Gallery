@@ -186,11 +186,16 @@ class GANG(nn.Module):
         )
         self.layers = nn.Sequential(*self.layers)
 
+
+    def mapping(self, z):
+        return self.projector(z).view(z.size(0), -1, self.init_size, self.init_size)
+
+    def synthesis(self, w):
+        return torch.tanh(self.layers(w))
+
     def forward(self, z, return_w=False):
-        x = self.projector(z)
-        self._w = x.view(x.size(0), -1, self.init_size, self.init_size)
-        x = self.layers(self._w)
-        return torch.tanh(x)
+        w = self.mapping(z)
+        return self.synthesis(w)
 
 
 class GAND(nn.Module):
