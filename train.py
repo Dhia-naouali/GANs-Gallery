@@ -39,19 +39,19 @@ class Trainer:
 
         self.config = config
         seed_all() # seed dali
-
         setup_directories(self.config)
 
-        self.G, self.D = setup_models(config.model)
 
         # (muP ?), hold on buddy brb
+        self.G, self.D = setup_models(config.model)
         init_model_params(self.G)
         init_model_params(self.D)
+        self.G = torch.compile(self.G, mode="max-autotune-no-cudagraphs")
+        self.D = torch.compile(self.D, mode="max-autotune-no-cudagraphs")        
+        
+        print(f"Generator: {count_params(self.G) * 1e-6:.2f} \n"
+              f"Discriminator: {count_params(self.D) * 1e-6:.2f}")
 
-
-        # self.G.contiguous(memory_format=torch.channels_last); self.D.contiguous(memory_format=torch.channels_last)
-        # self.G = torch.compile(self.G, mode="max-autotune-no-cudagraphs")
-        # self.D = torch.compile(self.D, mode="max-autotune-no-cudagraphs")
 
 
         self.ada = AdaptiveDiscriminatorAugmentation(
@@ -59,10 +59,6 @@ class Trainer:
         ) if config.ADA.use_ADA else None
         self.real_acc = None
         # self.ada.transform = torch.compile(self.ada.transform, mode="max-autotune-no-cudagraphs")
-        
-
-        print(f"Generator: {count_params(self.G) * 1e-6:.2f} \n"
-              f"Discriminator: {count_params(self.D) * 1e-6:.2f}")
         
 
         self.dataloader = setup_dataloader(
@@ -161,7 +157,6 @@ class Trainer:
         self.D.zero_grad()
 
         with autocast(device_type="cuda"):
-
             if self.ada:
                 real_images = self.ada(real_images, real_acc=self.real_acc)
 
