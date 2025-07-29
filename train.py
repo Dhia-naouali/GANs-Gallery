@@ -139,9 +139,8 @@ class Trainer:
         if path_length_penalty := self.config.loss.get("path_length_penalty", 0):
             self.path_length_regularizer = PathLengthREgularizer(path_length_penalty)
 
-        if gradient_penalty_ := self.config.loss.get("gradient_penalty", False):
-            self.gradient_penalty_ = True
-        
+        self.gradient_penalty_ = self.config.loss.get("gradient_penalty", False)
+            
         
     def train_step(self, real_images):
         self.G.zero_grad()
@@ -151,7 +150,27 @@ class Trainer:
         if self.ada:
             real_images = self.ada(real_images, self.real_acc)
         
-        real_logits = None
+
+        # with torch.cuda.stream(self.sream1), autocast(device_type="cuda"):
+        #     real_logits = self.D(real_images)
+        #     fake_images = self.G(noise)
+        #     self.fake_images_generated.recorde(self.stream1)
+        #     fake_logits = self.D(fake_images)
+        #     G_loss = self.criterion.generator_loss(fake_logits, real_logits)
+        #     D_loss = self.criterion.discriminator_loss(fake_logits, real_logits)
+            
+            
+            
+        # with torch.cuda.stream(self.stream2), autocast(device_type="cuda"):
+        #     self.stream2.wait_event(self.fake_images_generated)
+        #     if self.path_length_regularizer:
+        #         path_length_penalty = self.path_length_regularizer(fake_images)
+        #     if 
+        #     gradient_penalty = self.criterion.gradient_penalty(fake_images, real_images)
+        #     if 
+        #     r1_penalty = self.r1_regularizer(real_logits, real_images)
+
+        real_logits = torch.zeros(self.batch_size, 1)
         with torch.cuda.stream(self.stream1), autocast(device_type="cuda"):
                 fake_images = self.G(noise)
                 if self.ada:
@@ -161,7 +180,7 @@ class Trainer:
                 fake_logits = self.D(fake_images)
 
                 self.stream1.wait_event(self.real_logits_r1_computed)
-                self.G_loss = self.criterion.generator_loss(fake_logits, real_logits)                
+                G_loss = self.criterion.generator_loss(fake_logits, real_logits)                
                 self.g_loss_computed.record(self.stream1)
 
                 D_loss = self.criterion.discriminator_loss(fake_logits, real_logits)
@@ -178,11 +197,11 @@ class Trainer:
                     gradient_penalty = self.criterion.gradient_penalty(fake_images, real_images)
                 
                 if self.path_length_regularizer:
-                    self.stream2.wait_event(self.g_loss_computed)
+                    # self.stream2.wait_event(self.g_loss_computed)
                     path_length_penalty = self.path_length_regularizer(fake_images, self.G._w)
 
         main_stream = torch.cuda.current_stream()
-
+        print(real_logits.max(), real_logits.min())
         main_stream.wait_stream(self.stream1)
         main_stream.wait_stream(self.stream2)
 
