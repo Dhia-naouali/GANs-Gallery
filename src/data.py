@@ -59,6 +59,7 @@ def data_pipeline(root_dir, image_size, target_subdir=None):
         mean=127.5,
         stddev=127.5
     )
+    images = fn.cast(images, dtype=types.FLOAT16)
     return fn.transpose(images)
 
 
