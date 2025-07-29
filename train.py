@@ -32,6 +32,7 @@ from src.losses import setup_loss, R1Regularizer, PathLengthREgularizer
 
 torch.set_default_device("cuda:0")
 device = torch.device("cuda:0")
+torch._functorch.config.donated_buffer = False
 
 
 class Trainer:
@@ -140,8 +141,8 @@ class Trainer:
 
 
     def train_step(self, real_images):
-        self.G.zero_grad()
-        self.D.zero_grad()
+        self.G.zero_grad(set_to_none=True)
+        self.D.zero_grad(set_to_none=True)
         path_length_penalty = 0
         r1_penalty = 0
         gradient_penalty = 0
@@ -181,7 +182,6 @@ class Trainer:
         # Generator loss, main stream
         #################################################################
         with autocast(device_type="cuda"):
-            noise = torch.randn(self.batch_size, self.G.lat_dim)
             fake_images = self.G(noise)
             fake_logits = self.D(fake_images)
 
@@ -218,8 +218,8 @@ class Trainer:
         self.G_scaler.scale(G_loss).backward()
         self.G_scaler.step(self.G_optimizer)
         self.G_scaler.update()
-        
-        
+
+
         return {
             "G_loss": G_loss.item(),
             "D_loss": D_loss.item(),
