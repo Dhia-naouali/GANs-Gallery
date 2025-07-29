@@ -167,15 +167,13 @@ class Trainer:
         # path length penalty, penalties stream
         #################################################################
         if self.path_length_regularizer:
-            with torch.cuda.stream(self.penalties_stream):
+            with torch.cuda.stream(self.penalties_stream), torch.compiler.disable():
                 w = self.G.mapping(noise)
                 fake_images_ = self.G.synthesis(w)
                 path_length_penalty = self.path_length_regularizer(fake_images_, w)
 
             main_stream = torch.cuda.current_stream()
             main_stream.wait_stream(self.penalties_stream)
-
-
 
 
         #################################################################
@@ -192,7 +190,7 @@ class Trainer:
         # R1 & Gradient penalty, penalties stream
         #################################################################
         if self.r1_regularizer or self.gradient_penalty_:
-            with torch.cuda.stream(self.penalties_stream):
+            with torch.cuda.stream(self.penalties_stream), torch.compiler.disable():
                 if self.r1_regularizer:
                     r1_penalty = self.r1_regularizer(real_logits, real_images)
                 if self.gradient_penalty_:
