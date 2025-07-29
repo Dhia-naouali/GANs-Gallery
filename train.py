@@ -31,10 +31,10 @@ from src.losses import setup_loss, R1Regularizer, PathLengthREgularizer
 
 
 torch.set_default_device("cuda:0")
+device = torch.device("cuda:0")
 
 class Trainer:
     def __init__(self, config):
-        # regularizers
         # compile ?
 
         self.config = config
@@ -139,9 +139,7 @@ class Trainer:
         bs = real_images.size(0)
         
         for _ in range(self.n_critic):
-            noise = torch.randn(bs, self.config.model.lat_dim)
-            if self.ada:
-                real_images = self.ada(real_images, real_acc=self.real_acc)
+            noise = torch.randn(bs, self.config.model.lat_dim, dtype=torch.float16)
 
             D_loss, fake_acc, real_acc, real_logits = self.D_train_step(noise, real_images)
 
@@ -161,7 +159,12 @@ class Trainer:
 
     def D_train_step(self, noise, real_images):
         self.D.zero_grad()
+
         with autocast(device_type="cuda"):
+
+            if self.ada:
+                real_images = self.ada(real_images, real_acc=self.real_acc)
+
             real_images = real_images.detach().requires_grad_(True)
             real_logits = self.D(real_images)
 
