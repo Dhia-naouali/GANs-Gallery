@@ -47,8 +47,9 @@ class Trainer:
         self.G, self.D = setup_models(config.model)
         init_model_params(self.G)
         init_model_params(self.D)
-        self.G = torch.compile(self.G, mode="max-autotune-no-cudagraphs")
-        self.D = torch.compile(self.D, mode="max-autotune-no-cudagraphs")
+        if self.config.training.compile:
+            self.G = torch.compile(self.G, mode="max-autotune-no-cudagraphs")
+            self.D = torch.compile(self.D, mode="max-autotune-no-cudagraphs")
         
         print(f"Generator: {count_params(self.G) * 1e-6:.2f} \n"
               f"Discriminator: {count_params(self.D) * 1e-6:.2f}")
