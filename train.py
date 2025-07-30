@@ -85,11 +85,10 @@ class Trainer:
         self.NOISE = torch.randn(16, self.config.model.lat_dim)
         
         self.penalties_stream = torch.cuda.Stream()
-
-        self.g_loss_computed = torch.cuda.Event()
-        self.fake_images_generated = torch.cuda.Event()
-        self.real_logits_r1_computed = torch.cuda.Event()
-        
+        self.losses_stream = torch.cuda.Stream()
+        self.G_loss_computed = torch.cuda.Event()
+        self.plp_computed = torch.cuda.Event()
+       
 
     def setup_optimizers(self):
         config = self.config.optimizer
@@ -143,62 +142,65 @@ class Trainer:
     def train_step(self, real_images):
         self.G.zero_grad(set_to_none=True)
         self.D.zero_grad(set_to_none=True)
-        path_length_penalty = 0
-        r1_penalty = 0
-        gradient_penalty = 0
+        path_length_penalty = torch.tensor(0)
+        r1_penalty = torch.tensor(0)
+        gradient_penalty = torch.tensor(0)
 
-        #################################################################
-        # Discriminator loss main stream
-        #################################################################
         noise = torch.randn(self.batch_size, self.G.lat_dim)
-        with autocast(device_type="cuda"):
-            if self.ada:
-                real_images = self.ada(real_images, real_acc=self.real_acc)
 
-            real_logits = self.D(real_images)
-            with torch.no_grad():   
-                fake_images = self.ada(self.G(noise)) if self.ada else self.G(noise)
+        with torch.cuda.stream(self.losses_stream):
+            with autocast(device_type="cuda"):
+                if self.ada:
+                    real_images = self.ada(real_images, real_acc=self.real_acc)
 
-            fake_logits = self.D(fake_images)
-            D_loss = self.criterion.discriminator_loss(fake_logits, real_logits)
+                #################################################################
+                # G loss
+                #################################################################
+                real_logits = self.D(real_images)
+                real_logits.record_stream(self.penalties_stream)
+                real_images.record_stream(self.penalties_stream)
+
+                with torch.no_grad():   
+                    fake_images = self.ada(self.G(noise)) if self.ada else self.G(noise)
+                fake_images.record_stream(self.penalties_stream)
+
+                fake_logits = self.D(fake_images)
+                D_loss = self.criterion.discriminator_loss(fake_logits, real_logits)
+
+                self.G_loss_computed.record(self.losses_stream)
+                self.penalties_stream.wait_event(self.plp_computed)
+                #################################################################
+                # G loss
+                #################################################################
+                fake_images_G = self.G(noise)
+                fake_images_G.record_stream(self.penalties_stream)
+                fake_logits_G = self.D(fake_images_G)
+                G_loss = self.criterion.generator_loss(fake_logits_G, real_logits)
 
 
-        #################################################################
-        # path length penalty, penalties stream
-        #################################################################
-        if self.path_length_regularizer:
-            with torch.cuda.stream(self.penalties_stream), torch.compiler.disable():
-                w = self.G.mapping(noise)
-                fake_images_ = self.G.synthesis(w)
-                path_length_penalty = self.path_length_regularizer(fake_images_, w)
+        if self.path_length_regularizer or self.r1_regularizer or self.gradient_penalty_:
+            with torch.cuda.stream(self.penalties_stream):
+                # path length penalty, penalties stream
+                #################################################################
+                if self.path_length_regularizer:
+                    w = self.G.mapping(noise)
+                    fake_images_ = self.G.synthesis(w)
+                    path_length_penalty = self.path_length_regularizer(fake_images_, w)
 
-            main_stream = torch.cuda.current_stream()
-            main_stream.wait_stream(self.penalties_stream)
-
-
-        #################################################################
-        # Generator loss, main stream
-        #################################################################
-        with autocast(device_type="cuda"):
-            fake_images = self.G(noise)
-            fake_logits = self.D(fake_images)
-
-            G_loss = self.criterion.generator_loss(fake_logits, real_logits)
-
-        
-        #################################################################
-        # R1 & Gradient penalty, penalties stream
-        #################################################################
-        if self.r1_regularizer or self.gradient_penalty_:
-            with torch.cuda.stream(self.penalties_stream), torch.compiler.disable():
+                self.plp_computed.record(self.penalties_stream)
+                self.penalties_stream.wait_event(self.G_loss_computed)
+                #################################################################
+                # R1 & Gradient penalty, penalties stream
+                #################################################################
                 if self.r1_regularizer:
                     r1_penalty = self.r1_regularizer(real_logits, real_images)
                 if self.gradient_penalty_:
                     gradient_penalty = self.criterion.gradient_penalty(fake_images.detach(), real_images)
 
-            main_stream = torch.cuda.current_stream()
-            main_stream.wait_stream(self.penalties_stream)
 
+        main_stream = torch.cuda.current_stream()
+        main_stream.wait_stream(self.losses_stream)
+        main_stream.wait_stream(self.penalties_stream)
 
         D_loss += r1_penalty + gradient_penalty
         G_loss += path_length_penalty
