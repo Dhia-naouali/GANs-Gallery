@@ -2,9 +2,6 @@ import torch
 from torch import optim
 from torch.amp import GradScaler, autocast
 
-torch.backends.cudnn.benchmark = True 
-torch.backends.cudnn.deterministic = False
-
 from torchvision.utils import make_grid
 
 import os
@@ -88,7 +85,7 @@ class Trainer:
         self.losses_stream = torch.cuda.Stream()
         self.G_loss_computed = torch.cuda.Event()
         self.plp_computed = torch.cuda.Event()
-       
+
 
     def setup_optimizers(self):
         config = self.config.optimizer
@@ -173,13 +170,13 @@ class Trainer:
                 # G loss
                 #################################################################
                 fake_images_G = self.G(noise)
-                fake_images_G.record_stream(self.penalties_stream)
                 fake_logits_G = self.D(fake_images_G)
                 G_loss = self.criterion.generator_loss(fake_logits_G, real_logits)
 
 
         if self.path_length_regularizer or self.r1_regularizer or self.gradient_penalty_:
             with torch.cuda.stream(self.penalties_stream):
+                #################################################################
                 # path length penalty, penalties stream
                 #################################################################
                 if self.path_length_regularizer:
