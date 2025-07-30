@@ -129,3 +129,48 @@ class StyleGANG(nn.Module):
 
 
         return torch.tanh(rgb)
+
+
+
+class BatchSTD(nn.Module):
+    def forward(self, x):
+        b, _, h, w = x.shape
+        std = x.std(dim=0, keepdim=True).mean()
+        return torch.cat([
+            x,
+            std.expand(b, 1, h, w)
+        ], dim=1)
+
+
+class StyleGAND(nn.Module):
+    def __init__(self, init_channels, depth):
+        super().__init__()
+        self.bstd = BatchSTD()
+        self.blocks = []
+
+        in_channels = 3
+        for i in range(depth):
+            out_channels = init_channels * (2**i)
+            self.blcoks.append(
+                nn.Sequential(
+                    nn.Conv2d(in_channels, out_channels, 3, padding=1),
+                    nn.LeakyReLU(.2),
+                    nn.Conv2d(out_channels, 3, padding=1),
+                    nn.LeakyReLU(.2),
+                )
+            )
+            in_channels = out_channels
+        self.blocks = nn.Sequential(*self.blocks)
+
+        self.head = nn.Sequential(
+            nn.Conv2d(in_channels + 1, in_channels, 3, padding=1),
+            nn.LeakyReLU(.2),
+            nn.AdaptiveAvgPool2d(1),
+            nn.Flatten(),
+            nn.Linear(in_channels, 1)
+        )
+        
+    def forward(self, x):
+        x = self.blocks(x)
+        x = self.bstd(x)
+        return self.final(x)
