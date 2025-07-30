@@ -143,7 +143,7 @@ class GANG(nn.Module):
         self.projector = nn.Sequential(
             nn.Linear(lat_dim, init_channels * (self.init_size**2)),
             nn.BatchNorm1d(init_channels * (self.init_size**2)),
-            nn.ReLU(inplace=True)
+            nn.ReLU()
         )
 
         block_kwargs = {
