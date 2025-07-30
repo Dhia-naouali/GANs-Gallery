@@ -1,3 +1,4 @@
+name: GAN
 lat_dim: 128
 norm: batch
 spectral_norm: false

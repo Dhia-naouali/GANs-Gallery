@@ -174,3 +174,5 @@ class StyleGAND(nn.Module):
         x = self.blocks(x)
         x = self.bstd(x)
         return self.final(x)
+
+
