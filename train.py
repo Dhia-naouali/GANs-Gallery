@@ -204,6 +204,7 @@ class Trainer:
         
         
         self.D_scaler.scale(D_loss).backward()
+        torch.nn.utils.clip_grad_norm_(self.D.parameters(), max_norm=1.0)
         self.D_scaler.step(self.D_optimizer)
         self.D_scaler.update()
         self.D_scheduler.step()
@@ -214,6 +215,7 @@ class Trainer:
 
         self.real_acc = real_acc
         self.G_scaler.scale(G_loss).backward()
+        torch.nn.utils.clip_grad_norm_(self.D.parameters(), max_norm=1.0)
         self.G_scaler.step(self.G_optimizer)
         self.G_scaler.update()
         self.G_scheduler.step()
