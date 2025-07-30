@@ -12,7 +12,7 @@ training:
   batch_size: 32
   image_size: 256
   pin_memory: true
-  compile: true
+  compile: false
   save_every: 40
   sample_every: 10
   eval_every: 1
