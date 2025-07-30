@@ -39,7 +39,7 @@ class _Conv(nn.Module):
         "layer": nn.LayerNorm,
         "instance": nn.InstanceNorm2d,
         "pixel": PixelNorm,
-        None: nn.Identity
+        "none": nn.Identity
     }
     
     def __init__(self, conv, out_channels, norm, activation, leak, use_SN):
