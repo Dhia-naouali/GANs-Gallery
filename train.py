@@ -206,6 +206,7 @@ class Trainer:
         self.D_scaler.scale(D_loss).backward()
         self.D_scaler.step(self.D_optimizer)
         self.D_scaler.update()
+        self.D_scheduler.step()
 
         with torch.no_grad():
             fake_acc = (fake_logits < 0).float().mean().item()
@@ -215,6 +216,7 @@ class Trainer:
         self.G_scaler.scale(G_loss).backward()
         self.G_scaler.step(self.G_optimizer)
         self.G_scaler.update()
+        self.G_scheduler.step()
 
 
         return {
