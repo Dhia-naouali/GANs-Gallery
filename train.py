@@ -137,6 +137,80 @@ class Trainer:
 
 
     def train_step(self, real_images):
+        for _ in range(self.n_critic):
+            D_loss, fake_acc, real_acc, real_logits = self.D_train_step(real_images)
+        G_loss = self.G_train_step(real_logits)
+        
+        return {
+            "G_loss": G_loss,
+            "D_loss": D_loss,
+            "real_acc": real_acc,
+            "fake_acc": fake_acc,
+        }
+
+
+    def D_train_step(self, real_images):
+        self.D.zero_grad(set_to_none=True)
+        r1_penalty = torch.tensor(0)
+        gradient_penalty = torch.tensor(0)
+
+        noise = torch.randn(self.batch_size, self.G.lat_dim)
+        with autocast(device_type="cuda"):
+            real_images = self.ada(real_images) if self.ada else real_images
+            real_logits = self.D(real_images)
+            
+            with torch.no_grad():
+                fake_images = self.ada(self.G(noise), real_acc=self.real_acc) \
+                    if self.ada else self.G(noise)
+
+            fake_logits = self.D(fake_images)
+            D_loss = self.criterion.discriminator_loss(fake_logits, real_logits)
+
+            if self.r1_regularizer:
+                r1_penalty = self.r1_regularizer(real_logits, real_images)
+            if self.gradient_penalty_:
+                gradient_penalty = self.criterion.gradient_penalty(fake_images, real_images)
+
+
+            D_loss += r1_penalty + gradient_penalty        
+            self.D_scaler.scale(D_loss).backward()
+            self.D_scaler.step(self.D_optimizer)
+            self.D_scaler.update()
+            self.D_scheduler.step()
+            
+            with torch.no_grad():
+                fake_acc = (fake_logits < 0).float().mean().item()
+                real_acc = (real_logits > 0).float().mean().item()
+
+            self.real_acc = real_acc
+            return D_loss.item(), fake_acc, real_acc, real_logits
+
+
+    def G_train_step(self, real_logits):
+        self.G.zero_grad(set_to_none=True)
+        path_length_penalty = torch.tensor(0)
+        noise = torch.randn(self.batch_size, self.G.lat_dim)
+        
+        with autocast(device_type="cuda"):
+            fake_images = self.G(noise)
+            fake_logits = self.D(fake_images)
+            G_loss = self.criterion.generator_loss(fake_logits, real_logits)
+            
+            if self.path_length_regularizer:
+                w = self.G.mapping(noise)
+                fake_images_ = self.G.synthesis(w)
+                path_length_penalty = self.path_length_regularizer(fake_images_, w)
+
+        G_loss += path_length_penalty
+        self.G_scaler.scale(G_loss).backward()
+        self.G_scaler.step(self.G_optimizer)
+        self.G_scaler.update()
+        self.G_scheduler.step()
+
+        return G_loss.item()
+
+    def _train_step(self, real_images):
+        # sus list: set_to_none=True
         self.G.zero_grad(set_to_none=True)
         self.D.zero_grad(set_to_none=True)
         path_length_penalty = torch.tensor(0)
