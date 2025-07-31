@@ -96,9 +96,10 @@ class ToRGB(nn.Module):
     
     
 class StyleGANG(nn.Module):
-    def __init__(self, z_dim=256, w_dim=256, depth=5, init_channels=256):
+    def __init__(self, lat_dim=256, w_dim=256, depth=5, init_channels=256):
         super().__init__()
-        self.mapper = Mapper(z_dim, w_dim)
+        self.lat_dim = lat_dim
+        self.mapper = Mapper(lat_dim, w_dim)
         self.init_canvas = nn.Parameter(torch.randn(1, init_channels, 4, 4))
         self.blocks = nn.ModuleList()
         self.rgbs = nn.ModuleList()
@@ -114,10 +115,9 @@ class StyleGANG(nn.Module):
             self.rgbs.append(ToRGB(out_channels, w_dim))
             init_channels = out_channels
         
-            
-    def forward(self, z):
-        w = self.mapper(z)
-        B = z.size(0)
+    
+    def synthesis(self, w):
+        B = w.size(0)
         x = self.init_canvas.expand(B, *([-1]*3))
         rgb = None
 
@@ -127,8 +127,12 @@ class StyleGANG(nn.Module):
                 if rgb is not None else 0
             rgb += to_rgb(x, w)
 
-
         return torch.tanh(rgb)
+
+
+    def forward(self, z):
+        w = self.mapper(z)
+        return self.synthesis(w)
 
 
 
