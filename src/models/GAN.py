@@ -123,13 +123,12 @@ class DeConvBlock(_Conv):
 class GANG(nn.Module):
     def __init__(
             self,
-            lat_dim, 
-            hidden_dim, 
-            depth, 
-            attention_layers=None, 
-            norm="batch", 
-            activation="elu", 
-            leak=.1, 
+            lat_dim,
+            channels,
+            attention_layers=None,
+            norm="batch",
+            activation="elu",
+            leak=.1,
             use_SA=False,
             use_SN=True,
         ):
@@ -138,7 +137,7 @@ class GANG(nn.Module):
         self.attention_layers = attention_layers or []
 
         self.init_size = 4
-        init_channels  = hidden_dim * (2**(depth-1))
+        init_channels  = lat_dim // (self.init_size**2)
 
         self.projector = nn.Sequential(
             nn.Linear(lat_dim, init_channels * (self.init_size**2)),
@@ -159,8 +158,8 @@ class GANG(nn.Module):
 
         self.layers = []
         in_channels = init_channels
-        for i in range(depth-1):
-            out_channels = hidden_dim * (2** (depth - i - 1))
+        for i in range(len(channels)):
+            out_channels = out_channels[i]
             self.layers.append(
                 DeConvBlock(
                     in_channels,
@@ -202,6 +201,7 @@ class GANG(nn.Module):
 class GAND(nn.Module):
     def __init__(
             self,
+            channels,
             hidden_dim,
             depth,
             attention_layers=None,
@@ -229,7 +229,7 @@ class GAND(nn.Module):
         in_channels = 3
         self.layers = []
         for i in range(depth):
-            out_channels = hidden_dim * (2**i)
+            out_channels = channels[i]
             self.layers.append(
                 ConvBlock(
                     in_channels, out_channels, **block_kwargs

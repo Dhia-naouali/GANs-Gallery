@@ -111,16 +111,17 @@ class StyleBlock(nn.Module):
     
     
 class StyleGANG(nn.Module):
-    def __init__(self, lat_dim=256, w_dim=256, depth=5, init_channels=256):
+    def __init__(self, channels, lat_dim=256, w_dim=256):
         super().__init__()
+        init_channels = channels[0]
         self.lat_dim = lat_dim
         self.mapper = Mapper(lat_dim, w_dim)
         self.init_canvas = nn.Parameter(torch.randn(1, init_channels, 4, 4))
         self.blocks = nn.ModuleList()
         self.rgbs = nn.ModuleList()
 
-        for i in range(depth):
-            out_channels = init_channels // (2**i)
+        for i in range(len(channels[1:])):
+            out_channels = channels[i]
             self.blocks.append(
                 nn.Sequential(
                     StyleBlock(init_channels, out_channels, w_dim),
@@ -174,14 +175,13 @@ class BatchSTD(nn.Module):
 
 
 class StyleGAND(nn.Module):
-    def __init__(self, init_channels, depth):
+    def __init__(self, channels):
         super().__init__()
         self.bstd = BatchSTD()
         self.blocks = []
 
         in_channels = 3
-        for i in range(depth):
-            out_channels = init_channels * (2**i)
+        for out_channels in channels:
             self.blocks.append(
                 nn.Sequential(
                     nn.Conv2d(in_channels, out_channels, 3, padding=1),
@@ -202,11 +202,9 @@ class StyleGAND(nn.Module):
             nn.Linear(in_channels, 1)
         )
         init_weights(self)
-        
-        
+
+
     def forward(self, x):
         x = self.blocks(x)
         x = self.bstd(x)
         return self.head(x)
-
-

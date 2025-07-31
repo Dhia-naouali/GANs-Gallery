@@ -2,17 +2,16 @@ from .GAN import GANG, GAND
 from .styleGAN import StyleGANG, StyleGAND
 
 def setup_models(config):
+    def retrieve(param, default):
+        return specific.get(param, config.get(param, default))
     if config.get("name", "GAN") == "GAN":
-        def retrieve(param, default):
-            return specific.get(param, config.get(param, default))
         
         specific=config.generator
         generator_config = {
             "lat_dim": retrieve("lat_dim", 128),
-            "hidden_dim": retrieve("hidden_dim", 32),
-            "depth": retrieve("depth", 6),
+            "channels": retrieve("chanenls", [512, 256, 256, 128, 128, 64]),
             "norm": retrieve("norm", "batch"),
-            "activation": retrieve("activation", "elu"),
+            "activation": retrieve("activation", "leaky_relu"),
             "leak": retrieve("leak", 0.1),
             "use_SA": retrieve("use_SA", False),
             "use_SN": retrieve("use_SN", False),
@@ -26,8 +25,7 @@ def setup_models(config):
 
         specific=config.discriminator
         discriminator_config = {
-            "hidden_dim": retrieve("hidden_dim", 32),
-            "depth": retrieve("depth", 6),
+            "channels": retrieve("channels", [64, 128, 128, 256]),
             "norm": retrieve("norm", "none"),
             "activation": retrieve("activation", "elu"),
             "leak": retrieve("leak", 0.1),
@@ -45,13 +43,12 @@ def setup_models(config):
         generator = StyleGANG(
             lat_dim=config.generator.get("lat_dim", 128),
             w_dim=config.generator.get("w_dim", 128),
-            depth=config.generator.get("depth", 5),
+            channels=config.generator.get("chanenls", [256, 256, 128, 128, 64]),
             init_channels=config.generator.get("hidden_dim", 128)
         )
 
         discriminator = StyleGAND(
-            init_channels=config.discriminator.get("hidden_dim", 64),
-            depth=config.discriminator.get("depth", 5)
+            channels = config.discriminator.get("channels", [64, 128, 128, 256]),
         )
 
     return generator, discriminator
