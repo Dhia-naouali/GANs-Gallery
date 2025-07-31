@@ -122,7 +122,8 @@ class StyleGANG(nn.Module):
         rgb = None
 
         for block, to_rgb in zip(self.blocks, self.rgbs):
-            x = block(x, w)
+            for b in block:            
+                x = b(x, w)
             rgb = F.interpolate(rgb, scale_factor=2, mode="bilinear", align_corners=True) \
                 if rgb is not None else 0
             rgb += to_rgb(x, w)
@@ -177,6 +178,6 @@ class StyleGAND(nn.Module):
     def forward(self, x):
         x = self.blocks(x)
         x = self.bstd(x)
-        return self.final(x)
+        return self.head(x)
 
 
