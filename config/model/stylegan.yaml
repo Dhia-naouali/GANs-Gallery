@@ -1,0 +1,7 @@
+name: StyleGAN
+
+generator:
+  lat_dim: 256
+
+discriminator:
+

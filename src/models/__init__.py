@@ -1,5 +1,5 @@
-from GAN import GANG, GAND
-from styleGAN import StyleGANG, StyleGAND
+from .GAN import GANG, GAND
+from .styleGAN import StyleGANG, StyleGAND
 
 def setup_models(config):
     if config.get("name", "GAN") == "GAN":

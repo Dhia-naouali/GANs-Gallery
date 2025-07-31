@@ -4,7 +4,7 @@ norm: batch
 spectral_norm: false
 self_attention: false
 activation: elu
-leak: 0.1
+leak: 0.2
 
 generator:
   hidden_dim: 32
