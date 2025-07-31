@@ -25,7 +25,7 @@ from src.utils import (
 from src.models import setup_models
 from src.data import setup_dataloader, AdaptiveDiscriminatorAugmentation
 from src.losses import setup_loss, R1Regularizer, PathLengthREgularizer
-from .evaluate import Evaluator
+from evaluate import Evaluator
 
 torch.set_default_device("cuda:0")
 device = torch.device("cuda:0")
@@ -343,7 +343,7 @@ class Trainer:
                     epoch_metrics
                 )
             
-            if not epoch % self.evaluate_every:
+            if not epoch % self.config.training.evaluate_every:
                 self.G_ema.apply_moving()
                 evals = self.evaluator.evalute(len(self.dataloader))
                 wandb.log(evals)

@@ -317,7 +317,7 @@ class EMA:
         for name, param in self.G.named_parameters():
             if param.requires_grad:
                 self.moving[name] = self.decay * self.moving[name] +\
-                    (1 - self.decay) * self.para.data
+                    (1 - self.decay) * param.data
 
 
     def apply_moving(self):

@@ -20,7 +20,8 @@ class BCELoss(Loss):
             "real_labels", 
             torch.full(
                 size=(batch_size, 1), 
-                fill_value=1-label_smoothing
+                fill_value=1-label_smoothing,
+                dtype=torch.float
             )
         )
 
@@ -28,7 +29,8 @@ class BCELoss(Loss):
             "fake_labels", 
             torch.full(
                 size=(batch_size, 1), 
-                fill_value=label_smoothing
+                fill_value=label_smoothing,
+                dtype=torch.float
             )
         )
 
@@ -66,7 +68,7 @@ class WGANGPLoss(Loss):
         self.D = D
         self.register_buffer(
             "real_labels", 
-            torch.ones(batch_size, 1)
+            torch.ones(batch_size, 1, dtype=torch.float)
         )
 
 
@@ -106,7 +108,8 @@ class RelavisticAverageGANLoss(Loss):
             "real_labels", 
             torch.full(
                 size=(batch_size, 1), 
-                fill_value=1-label_smoothing
+                fill_value=1-label_smoothing,
+                dtype=torch.float
             )
         )
 
@@ -114,7 +117,8 @@ class RelavisticAverageGANLoss(Loss):
             "fake_labels", 
             torch.full(
                 size=(batch_size, 1),
-                fill_value=label_smoothing
+                fill_value=label_smoothing,
+                dtype=torch.float
             )
         )
         

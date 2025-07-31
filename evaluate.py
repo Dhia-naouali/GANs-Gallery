@@ -1,11 +1,11 @@
 # pip install torchmetrics[image]
 import torch
-from torchmetrics.image import (
-    FrechetInceptionDistance,
-    InceptionScore,
-    LearnedPerceptualImagePatchSimilarity,
-    KernelInceptionDistance
-)
+
+from torchmetrics.image.kid import KernelInceptionDistance
+from torchmetrics.image.fid import FrechetInceptionDistance
+from torchmetrics.image.inception import InceptionScore
+from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
+
 from tqdm import tqdm
 
 

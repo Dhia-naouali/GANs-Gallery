@@ -159,7 +159,7 @@ class GANG(nn.Module):
         self.layers = []
         in_channels = init_channels
         for i in range(len(channels)):
-            out_channels = out_channels[i]
+            out_channels = channels[i]
             self.layers.append(
                 DeConvBlock(
                     in_channels,
