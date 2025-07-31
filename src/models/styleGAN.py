@@ -121,8 +121,10 @@ class StyleGANG(nn.Module):
         x = self.init_canvas.expand(B, *([-1]*3))
         rgb = None
 
-        for block, to_rgb in zip(self.blocks, self.rgbs):
-            for b in block:            
+        for i, (block, to_rgb) in enumerate(zip(self.blocks, self.rgbs)):
+            if i:
+                x = F.interpolate(x, scale_factor=2, mode="bilinear", align_corners=True)
+            for b in block:
                 x = b(x, w)
             rgb = F.interpolate(rgb, scale_factor=2, mode="bilinear", align_corners=True) \
                 if rgb is not None else 0
