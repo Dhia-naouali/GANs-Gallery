@@ -14,9 +14,9 @@ def seed_all(seed=12):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    torch.cuda.manual_seed_all(seed) # aaaah the confidence
     torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False # hoping to land on good enough kernels T-T
+    torch.backends.cudnn.benchmark = False
 
 
 def count_params(model, trainable_only=False):
@@ -297,3 +297,32 @@ def init_model_params(model, init_scheme="normal", gain=0.02):
             nn.init.zeros_(module.bias.data)
     
     model.apply(init_func)
+
+
+
+class EMA:
+    def __init__(self, G, decay=.992):
+        self.G = G
+        self.decay = decay
+        self.moving = {}
+        self.backup = {}
+
+
+    def register(self):
+        for name, param in self.G.named_parameters():
+            if param.requires_grad:
+                self.moving[name] = param.data.clone()
+    
+    def update(self):
+        for name, param in self.G.named_parameters():
+            if param.requires_grad:
+                self.moving[name] = self.decay * self.moving[name] +\
+                    (1 - self.decay) * self.para.data
+
+
+    def apply_moving(self):
+        for name, param in self.G.named_parameters():
+            if param.requires_grad:
+                self.backup[name] = param.data
+                param.data = self.moving[name]
+
