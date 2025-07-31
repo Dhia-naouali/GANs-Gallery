@@ -1,4 +1,6 @@
 name: StyleGAN
+lat_dim: 256
+
 
 generator:
   lat_dim: 256

@@ -155,11 +155,11 @@ class StyleGAND(nn.Module):
         in_channels = 3
         for i in range(depth):
             out_channels = init_channels * (2**i)
-            self.blcoks.append(
+            self.blocks.append(
                 nn.Sequential(
                     nn.Conv2d(in_channels, out_channels, 3, padding=1),
                     nn.LeakyReLU(.2),
-                    nn.Conv2d(out_channels, 3, padding=1),
+                    nn.Conv2d(out_channels, out_channels, 3, padding=1),
                     nn.LeakyReLU(.2),
                 )
             )

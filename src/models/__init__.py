@@ -43,10 +43,10 @@ def setup_models(config):
 
     elif config.get("name", "StyleGAN"):
         generator = StyleGANG(
-            lat_dim=config.generator.get("lat_dim", 256),
-            w_dim=config.generator.get("w_dim", 256),
+            lat_dim=config.generator.get("lat_dim", 128),
+            w_dim=config.generator.get("w_dim", 128),
             depth=config.generator.get("depth", 5),
-            init_channels=config.generator.get("hidden_dim", 256)
+            init_channels=config.generator.get("hidden_dim", 128)
         )
 
         discriminator = StyleGAND(
