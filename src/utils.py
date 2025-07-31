@@ -273,7 +273,7 @@ class CheckpointManager:
 
 
 
-def init_weights(model, init_scheme="normal", gain=0.02):
+def init_weights(model, init_scheme="kaiming", gain=0.01):
     def init_func(module):
         modulename = module.__class__.__name__
         if hasattr(module, "weight") and ("Conv" in modulename or "Linear" in modulename):
@@ -283,7 +283,7 @@ def init_weights(model, init_scheme="normal", gain=0.02):
                 case "xavier":
                     nn.init.xavier_normal_(module.weight.data, a=0, gain=gain)
                 case "kaiming":
-                    nn.init.kaiming_normal_(module.weight.data, gain=gain, mode="fan_in")
+                    nn.init.kaiming_normal_(module.weight.data, mode="fan_in")
                 case "orthogonal":
                     nn.init.orthogonal_(module.weight.data, gain=gain)
                 case _:
@@ -306,6 +306,7 @@ class EMA:
         self.decay = decay
         self.moving = {}
         self.backup = {}
+        self._initialized = False
 
 
     def register(self):
@@ -314,6 +315,10 @@ class EMA:
                 self.moving[name] = param.data.clone()
     
     def update(self):
+        if not self._initialized:
+            self.register()
+            self._initialized = True
+
         for name, param in self.G.named_parameters():
             if param.requires_grad:
                 self.moving[name] = self.decay * self.moving[name] +\
@@ -325,8 +330,10 @@ class EMA:
             if param.requires_grad:
                 self.backup[name] = param.data
                 param.data = self.moving[name]
+            self.G.eval()
 
     def restore(self):
         for name, param in self.G.named_parameters():
             if param.requires_grad:
                 param.data = self.backup[name]
+            self.G.train()

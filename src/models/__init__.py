@@ -9,7 +9,8 @@ def setup_models(config):
         specific=config.generator
         generator_config = {
             "lat_dim": retrieve("lat_dim", 128),
-            "channels": retrieve("chanenls", [512, 256, 256, 128, 128, 64]),
+            "channels": retrieve("channels", [512, 256, 256, 128, 128, 64]),
+            "init_size": retrieve("init_size", 4),
             "norm": retrieve("norm", "batch"),
             "activation": retrieve("activation", "leaky_relu"),
             "leak": retrieve("leak", 0.1),
@@ -41,10 +42,9 @@ def setup_models(config):
 
     elif config.get("name", "StyleGAN"):
         generator = StyleGANG(
+            channels=config.generator.get("chanenls", [256, 256, 128, 128, 64]),
             lat_dim=config.generator.get("lat_dim", 128),
             w_dim=config.generator.get("w_dim", 128),
-            channels=config.generator.get("chanenls", [256, 256, 128, 128, 64]),
-            init_channels=config.generator.get("hidden_dim", 128)
         )
 
         discriminator = StyleGAND(

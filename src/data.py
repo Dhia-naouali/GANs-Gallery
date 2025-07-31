@@ -59,7 +59,7 @@ def data_pipeline(root_dir, image_size, target_subdir=None):
         mean=127.5,
         stddev=127.5
     )
-    images = fn.cast(images, dtype=types.FLOAT16)
+    # images = fn.cast(images, dtype=types.FLOAT16)
     return fn.transpose(images)
 
 
@@ -88,13 +88,13 @@ class AdaptiveDiscriminatorAugmentation(AugmentationSequential):
     def __init__(
         self,
         *args: Union[_AugmentationBase, ImageSequential],
-        initial_p: float = 1e-5,
+        initial_p: float = 0.,
         adjustment_speed: float = 1e-2,
         max_p: float = 0.8,
         target_real_acc: float = 0.85,
         ema_lambda: float = 0.99,
         update_every: int = 5,
-        erasing_scale: Union[Tensor, Tuple[float, float]] = (0.02, 0.33),
+        erasing_scale: Union[Tensor, Tuple[float, float]] = (0.02, 0.25),
         erasing_ratio: Union[Tensor, Tuple[float, float]] = (0.3, 3.3),
         erasing_fill_value: float = 0.0,
         data_keys: Optional[_data_keys_type] = None,
@@ -157,9 +157,9 @@ class AdaptiveDiscriminatorAugmentation(AugmentationSequential):
             RandomHorizontalFlip(p=1),
             RandomRotation90(times=(0, 3), p=1.0),
             RandomErasing(scale=scale, ratio=ratio, value=value, p=0.9),
-            RandomAffine(degrees=10, translate=(0.1, 0.1), scale=(0.9, 1.1), p=1.0),
+            # RandomAffine(degrees=10, translate=(0.1, 0.1), scale=(0.9, 1.1), p=1.0),
             ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, p=1.0),
-            RandomGaussianNoise(std=0.1, p=1.0),
+            RandomGaussianNoise(std=0.02, p=1.0),
         )
 
     def update(self, real_acc: float) -> None:
@@ -237,8 +237,7 @@ class AdaptiveDiscriminatorAugmentation(AugmentationSequential):
             )
 
         batch_size = self._get_inputs_metadata(inputs, data_keys=data_keys)
-
-        p_tensor = torch.bernoulli(torch.full((batch_size,), self.p, dtype=torch.float32)).bool()
+        p_tensor = torch.bernoulli(torch.full((batch_size,), float(self.p), dtype=torch.float32)).bool()
 
         if not p_tensor.any():
             return inputs

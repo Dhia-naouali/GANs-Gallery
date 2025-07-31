@@ -1,23 +1,28 @@
 defaults:
   - model: gan
   - data: afhq
-  - optimizer: adam
   - scheduler: warm_up_linear
   - wandb: default
   - _self_
+
+
+optimizer:
+  name: adam
+  G_lr: 12e-5
+  D_lr: 8e-5
 
 
 training:
   epochs: 160
   batch_size: 32
   image_size: 256
-  compile: true
+  compile: false
   save_every: 40
   sample_every: 10
-  evaluate_every: 10
-  beta1: 0.5
+  evaluate_every: 4
+  beta1: 0.0
   beta2: 0.9
-  n_critic: 1
+  n_critic: 3
 
 loss:
   criterion: bce # bce, hinge, wgan_gp, ragan

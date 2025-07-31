@@ -1,11 +1,13 @@
 # pip install torchmetrics[image]
 import torch
+from torch.amp import autocast
 
 from torchmetrics.image.kid import KernelInceptionDistance
 from torchmetrics.image.fid import FrechetInceptionDistance
 from torchmetrics.image.inception import InceptionScore
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
 
+import itertools
 from tqdm import tqdm
 
 
@@ -25,7 +27,7 @@ class Evaluator:
 
     @torch.no_grad
     def generate_samples(self, num_batches):
-        for _ in num_batches:            
+        for _ in range(num_batches):
             noise = torch.randn(
                 self.batch_size,
                 self.config.model.lat_dim,
@@ -36,14 +38,15 @@ class Evaluator:
             yield (samples * .5 + .5).byte()
     
 
-    def load_samples(self, dataloader, num_batches):
-        for _ in tqdm(num_batches):
-            samples = next(dataloader)[0]["image"]
-            yield (samples * .5 + .5).byte()
-    
+    def load_samples(self, num_batches):
+        real_iter = itertools.cycle(self.dataloader)
+        for _ in range(num_batches):
+            batch = next(real_iter)[0]["images"]
+            yield (batch * .5 + .5).byte()
+        
     
     @torch.no_grad()
-    def evalute(self, num_batches):
+    def evaluate(self, num_batches):
         self.FID.reset()
         self.IS.reset()
         self.KID.reset()
@@ -52,35 +55,34 @@ class Evaluator:
         fake_gen = self.generate_samples(num_batches)
         real_gen = self.load_samples(num_batches)
 
-
-        for _ in tqdm(range(num_batches)):
-            fake_images = next(fake_gen)
-            real_images = next(real_gen)
-
-
-            self.FID.update(fake_images, real=False)
-            self.FID.update(real_images, real=True)
-            self.IS.update(fake_images)
-            self.KID.update(fake_images, real=False)
-            self.KID.update(real_images, real=True)
-
-            lpips_score += self.LPIPS(fake_images, real_images).mean().item()
+        with autocast(device_type=self.device.type):
+            for _ in tqdm(range(num_batches)):
+                fake_images = next(fake_gen)
+                real_images = next(real_gen)
 
 
-        fid_score = self.FID.compute().item()
-        mean_is, std_is = self.IS.compute()
-        mean_kid, std_kid = self.KID.compute()
-        lpips_score /= num_batches
+                self.FID.update(fake_images, real=False)
+                self.FID.update(real_images, real=True)
+                self.IS.update(fake_images)
+                self.KID.update(fake_images, real=False)
+                self.KID.update(real_images, real=True)
+                lpips_score += self.LPIPS(fake_images, real_images).mean().item()
 
-        
-        return {
-            "FID": fid_score,
-            "IS_mean": mean_is,
-            "IS_std": std_is,
-            "KID_mean": mean_kid,
-            "KID_mean": std_kid,
-            "LPIPS": lpips_score,
-        }
+
+            fid_score = self.FID.compute().item()
+            mean_is, std_is = self.IS.compute()
+            mean_kid, std_kid = self.KID.compute()
+            lpips_score /= num_batches
+
+            
+            return {
+                "FID": fid_score,
+                "IS_mean": mean_is,
+                "IS_std": std_is,
+                "KID_mean": mean_kid,
+                "KID_mean": std_kid,
+                "LPIPS": lpips_score,
+            }
         
 
 if __name__ == "__main__":
