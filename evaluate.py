@@ -10,10 +10,11 @@ from tqdm import tqdm
 
 
 class Evaluator:
-    def __init__(self, G, dataloader, config, device): # may be used post training on cpu (ig ?)
+    def __init__(self, G, dataloader, config, batch_size, device): # may be used post training on cpu (ig ?)
         self.G = G.eval()
         self.dataloader = dataloader
         self.config = config
+        self.batch_size = batch_size
         self.device = device
         
         self.FID = FrechetInceptionDistance(normalize=True).to(device)
@@ -23,80 +24,64 @@ class Evaluator:
 
 
     @torch.no_grad
-    def generate_samples(self, batch_size, num_batches):
+    def generate_samples(self, num_batches):
         for _ in num_batches:            
             noise = torch.randn(
-                batch_size,
+                self.batch_size,
                 self.config.model.lat_dim,
                 device=self.device
             )
             
-            samples = self.G(noise)            
+            samples = self.G(noise)
             yield (samples * .5 + .5).byte()
     
-    def load_samples(self, dataloader, batch_size, num_batches):
 
+    def load_samples(self, dataloader, num_batches):
         for _ in tqdm(num_batches):
-            # to make sure that the batch size is the same used in the loader
-            samples = next(dataloader)[0]["image"] # to check if compatible with dali
+            samples = next(dataloader)[0]["image"]
             yield (samples * .5 + .5).byte()
-            
-
-    @torch.no_grad
-    def compute_fid(self, fake_images, real_images):
-        self.FID.reset()
-        self.FID.update(fake_images, real=False)
-        self.FID.update(real_images, real=True)
-        fid_mean, fid_std = self.FID.compute().item()
-        return fid_mean.item(), fid_std.item()
-
-
-    @torch.no_grad
-    def compute_inception_score(self, fake_images):
-        self.IS.reset()
-        self.IS.update(fake_images)
-        mean_is, std_is = self.IS.compute()
-        return mean_is.item(), std_is.item()
-    
-    @torch.no_grad
-    def compute_kid(self, fake_images, real_images):
-        self.KID.reset()
-        self.KID.update(fake_images, real=False)
-        self.KID.update(real_images, real=True)
-        mean_kid, std_kid =  self.KID.compute()
-        return mean_kid.item(), std_kid.item()
-        
-        
-    @torch.no_grad        
-    def compute_lpips_diversity(self, fake_images, real_images):
-        return self.LPIPS(fake_images, real_images).mean().item()
     
     
+    @torch.no_grad()
     def evalute(self, batch_size, num_batches):
-        fake_gen = self.generate_samples(batch_size, num_batches)
-        real_gen = self.load_samples(batch_size, num_batches)
+        self.FID.reset()
+        self.IS.reset()
+        self.KID.reset()
+        lpips_score = 0
+
+        fake_gen = self.generate_samples(num_batches)
+        real_gen = self.load_samples(num_batches)
 
 
-
-        for humm in range(num_batches):
+        for _ in tqdm(range(num_batches)):
             fake_images = next(fake_gen)
             real_images = next(real_gen)
 
-            # run in parallel ?
-            fid_mean, fid_std = self.compute_fid(fake_images, real_images)
-            mean_is, std_is = self.compute_inception_score(fake_images)
-            lpips_score = self.compute_lpips_diversity(fake_images, real_images)
-            mean_kid, std_kid = self.compute_kid(fake_images, real_images)
+
+            self.FID.update(fake_images, real=False)
+            self.FID.update(real_images, real=True)
+            self.IS.update(fake_images)
+            self.KID.update(fake_images, real=False)
+            self.KID.update(real_images, real=True)
+
+            lpips_score += self.LPIPS(fake_images, real_images).mean().item()
+
+
+        fid_score = self.FID.compute().item()
+        mean_is, std_is = self.IS.compute()
+        mean_kid, std_kid = self.KID.compute()
+        lpips_score /= num_batches
 
         
         return {
-            "FID": ,
-            "IS": ,
-            "KID": ,
-            "LPIPS": ,
+            "FID": fid_score,
+            "IS_mean": mean_is,
+            "IS_std": std_is,
+            "KID_mean": mean_kid,
+            "KID_mean": std_kid,
+            "LPIPS": lpips_score,
         }
         
-        
+
 def main():
-    # to use post training, using cli args ?, checkpoint path, ...
     ...
