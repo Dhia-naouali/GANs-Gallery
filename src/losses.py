@@ -42,6 +42,22 @@ class BCELoss(Loss):
         return (real_loss + fake_loss) * .5
 
 
+
+
+class HiingeLoss(Loss):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+
+    def generator_loss(self, fake_logits):
+        return -fake_logits.mean()
+    
+    def discriminator_loss(self, fake_logits, real_logits):
+        return F.relu(1 - real_logits).mean() +\
+            F.relu(1 + fake_logits).mean()        
+
+
+
+
 class WGANGPLoss(Loss):
     def __init__(self, batch_size, label_smoothing, lambda_gp=10, D=None):
         super().__init__()
@@ -50,10 +66,7 @@ class WGANGPLoss(Loss):
         self.D = D
         self.register_buffer(
             "real_labels", 
-            torch.full(
-                size=(batch_size, 1), 
-                fill_value=1-label_smoothing
-            )
+            torch.ones(batch_size, 1)
         )
 
 
@@ -65,7 +78,7 @@ class WGANGPLoss(Loss):
 
 
     def gradient_penalty(self, fake_samples, real_samples):
-        alpha = torch.rand(self.batch_size, 1, 1, 1)
+        alpha = torch.rand(self.batch_size, 1, 1, 1, device=fake_samples.device)
         interpolated_x = alpha * real_samples + (1 - alpha) * fake_samples
         interpolated_x.requires_grad_(True)
 
@@ -136,6 +149,7 @@ class RelavisticAverageGANLoss(Loss):
 
 LOSSES = {
     "bce": BCELoss,
+    "hinge": HiingeLoss,
     "wgan_gp": WGANGPLoss,
     "ragan": RelavisticAverageGANLoss
 }
@@ -144,7 +158,7 @@ LOSSES = {
 def setup_loss(config, D=None):
     batch_size = config.training.get("batch_size", 32)
     label_smoothing = config.loss.get("label_smoothing", 0)
-    lambda_gp = config.loss.get("grad_penalty", 0)
+    lambda_gp = config.loss.get("grad_penalty", 4)
     
     loss_config = {
         "batch_size": batch_size,
