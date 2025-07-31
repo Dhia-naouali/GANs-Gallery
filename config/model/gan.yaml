@@ -16,6 +16,6 @@ generator:
 discriminator: 
   hidden_dim: 32
   activation: elu
-  norm: 
+  norm: none
   spectral_norm: false
   depth: 6

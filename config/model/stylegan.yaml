@@ -1,9 +1,11 @@
 name: StyleGAN
-lat_dim: 256
+lat_dim: 128
 
 
 generator:
-  lat_dim: 256
+  lat_dim: 128
+  depth: 4
 
 discriminator:
   zeft: "a"
+  depth: 4

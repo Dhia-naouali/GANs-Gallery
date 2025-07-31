@@ -28,7 +28,7 @@ def setup_models(config):
         discriminator_config = {
             "hidden_dim": retrieve("hidden_dim", 32),
             "depth": retrieve("depth", 6),
-            "norm": retrieve("norm", None),
+            "norm": retrieve("norm", "none"),
             "activation": retrieve("activation", "elu"),
             "leak": retrieve("leak", 0.1),
             "use_SA": retrieve("use_SA", False),

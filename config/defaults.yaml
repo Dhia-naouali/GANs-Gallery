@@ -23,7 +23,7 @@ training:
 loss:
   criterion: bce # bce, wgan_gp, ragan
   label_smoothing: 0.1
-  gradient_penalty: 10 # > 0 to use, only used with wgan_gp
+  gradient_penalty: 0 # > 0 to use, only used with wgan_gp
   r1_penalty: 0 # > 0 to use
   path_length_penalty: 0 # > 0 to use
 

@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 
 class Mapper(nn.Module):
-    def __init__(self, z_dim, w_dim, depth=8):
+    def __init__(self, z_dim, w_dim, depth=5):
         super().__init__()
         self.layers = []
         for _ in range(depth):
