@@ -167,7 +167,7 @@ class GANG(nn.Module):
                     **block_kwargs
                 )
             )
-            if use_SA and i in self.attention_layers:
+            if use_SA and i in self.attention_layers or True:
                 self.layers.append(SelfAttention(out_channels))
             in_channels = out_channels
         
@@ -234,7 +234,7 @@ class GAND(nn.Module):
                     in_channels, out_channels, **block_kwargs
                 )
             )
-            if use_SA and i in self.attention_layers:
+            if use_SA and i in self.attention_layers or True:
                 self.layers.append(SelfAttention(out_channels))
 
             in_channels = out_channels

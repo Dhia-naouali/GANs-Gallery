@@ -4,8 +4,8 @@ lat_dim: 128
 
 generator:
   lat_dim: 128
-  depth: 4
+  depth: 5
 
 discriminator:
   zeft: "a"
-  depth: 4
+  depth: 5

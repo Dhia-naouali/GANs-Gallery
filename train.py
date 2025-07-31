@@ -48,6 +48,9 @@ class Trainer:
         if self.config.training.compile:
             self.G = torch.compile(self.G, mode="max-autotune-no-cudagraphs")
             self.D = torch.compile(self.D, mode="max-autotune-no-cudagraphs")
+            print("#"*40)
+            print("models compiled")
+            print("#"*40)
         
         print(self.G)
         print(self.D)
