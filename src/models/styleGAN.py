@@ -48,14 +48,14 @@ class ModConv(nn.Module):
 
         if self.demodulate:
             demod_coef = torch.rsqrt((W ** 2).sum([2, 3, 4]) + self.eps)
-            W = W * demod_coef.view(b, self.out_channels, 1, 1)
-        W = W.view(
+            W = W * demod_coef.view(b, self.out_channels, 1, 1, 1)
+        W = W.reshape(
             b * self.out_channels,
             self.in_channels,
             self.kernel_size,
             self.kernel_size,
         )
-        x = x.view(1, b*self.out_channels, c, h, w)
+        x = x.reshape(1, b*c, h, w)
 
         out = F.conv2d(x, W, padding=self.kernel_size//2, groups=b)
         return out.view(b, self.out_channels, h, w)
