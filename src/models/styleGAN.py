@@ -7,6 +7,7 @@ import torch.nn.functional as F
 class Mapper(nn.Module):
     def __init__(self, z_dim, w_dim, depth=5):
         super().__init__()
+        self.eps = 1e-8
         self.layers = []
         for _ in range(depth):
             self.layers += [
@@ -19,7 +20,7 @@ class Mapper(nn.Module):
     
     def forward(self, z):
         return self.layers(
-            z / torch.norm(z, dim=1, keepdim=True)
+            z / torch.norm(z, dim=1, keepdim=True) + self.eps
         )
 
 
@@ -30,7 +31,7 @@ class AdaIN(nn.Module):
         ...        
         
         
-class ModConv(nn.Module):
+class ModConv(nn.Module): 
     def __init__(self, in_channels, out_channels, kernel_size, style_dim, demodulate=True):
         super().__init__()
         self.in_channels = in_channels
@@ -44,12 +45,12 @@ class ModConv(nn.Module):
     def forward(self, x, style_vector):
         b, c, h, w = x.shape
         style = self.style_projector(style_vector).view(b, 1, self.in_channels, 1, 1)
-        W = self.weight * style
+        weight = self.weight * style
 
         if self.demodulate:
-            demod_coef = torch.rsqrt((W ** 2).sum([2, 3, 4]) + self.eps)
-            W = W * demod_coef.view(b, self.out_channels, 1, 1, 1)
-        W = W.reshape(
+            demod_coef = torch.rsqrt((weight ** 2).sum([2, 3, 4]) + self.eps)
+            weight = weight * demod_coef.view(b, self.out_channels, 1, 1, 1)
+        weight = weight.reshape(
             b * self.out_channels,
             self.in_channels,
             self.kernel_size,
@@ -57,7 +58,7 @@ class ModConv(nn.Module):
         )
         x = x.reshape(1, b*c, h, w)
 
-        out = F.conv2d(x, W, padding=self.kernel_size//2, groups=b)
+        out = F.conv2d(x, weight, padding=self.kernel_size//2, groups=b)
         return out.view(b, self.out_channels, h, w)
 
 
