@@ -29,7 +29,7 @@ class SelfAttention(nn.Module):
         value = self.v(x).view(bs, -1, h*w)
 
         attention = F.softmax(torch.bmm(query, key), dim=-1)
-        out = torch.bmm(value, attention.permute(0, 2, 1)).view(bs, c, h, w)
+        out = torch.bmm(value, attention.permute(0, 2, 1)).view(bs, value.size(1), h, w)
         return self.alpha * out + x
 
 
