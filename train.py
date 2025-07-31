@@ -141,7 +141,7 @@ class Trainer:
     def train_step(self, real_images):
         for _ in range(self.n_critic):
             D_loss, fake_acc, real_acc, real_logits = self.D_train_step(real_images)
-        G_loss = self.G_train_step(real_logits)
+        G_loss = self.G_train_step(real_logits.detach())
         
         return {
             "G_loss": G_loss,
