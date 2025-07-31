@@ -4,14 +4,34 @@ import torch.nn.functional as F
 
 
 
+
+class EqualizedLR:
+    # "weight" scaling at run time !!! sweeet
+    def __init__(self, module, gain=1):
+        self.module = module
+        self.gain = gain
+        self._init_weights()
+    
+    def _init_weights(self):
+        nn.init.normal_(self.module.weight)
+        if self.module.bias is not None:
+            nn.init.zeros_(self.module.bias)
+        fan_in = self.module.weight[0].numel()
+        self.scale = self.gain / (fan_in ** .5)
+
+    def forward(self, x):
+        return self.module(x * self.scale)
+
+
+
 class Mapper(nn.Module):
-    def __init__(self, z_dim, w_dim, depth=5):
+    def __init__(self, z_dim, w_dim, depth=4):
         super().__init__()
         self.eps = 1e-8
         self.layers = []
         for _ in range(depth):
             self.layers += [
-                nn.Linear(z_dim, w_dim),
+                EqualizedLR(nn.Linear(z_dim, w_dim)),
                 nn.LeakyReLU(.2),
             ]
             z_dim = w_dim
@@ -26,11 +46,10 @@ class Mapper(nn.Module):
 
 
 class AdaIN(nn.Module):
-    def __init__(self, ):
-        super().__init__()
-        ...
-        
-        
+    ...
+
+
+
 class ModConv(nn.Module): 
     def __init__(self, in_channels, out_channels, kernel_size, style_dim, demodulate=True):
         super().__init__()
@@ -38,18 +57,22 @@ class ModConv(nn.Module):
         self.out_channels = out_channels
         self.kernel_size = kernel_size
         self.demodulate = demodulate
-        self.style_projector = nn.Linear(style_dim, in_channels)
+        self.style_projector = EqualizedLR(nn.Linear(style_dim, in_channels), gain=1)
         self.weight = nn.Parameter(torch.randn(1, out_channels, in_channels, kernel_size, kernel_size))
         self.eps = 1e-8
         
     def forward(self, x, style_vector):
+        if self.upsample:
+            x = F.interpolate(x, scale_factor=2, mode="bilinear", align_corners=False)
         b, c, h, w = x.shape
+        
         style = self.style_projector(style_vector).view(b, 1, self.in_channels, 1, 1)
         weight = self.weight * style
 
         if self.demodulate:
             demod_coef = torch.rsqrt((weight ** 2).sum([2, 3, 4]) + self.eps)
             weight = weight * demod_coef.view(b, self.out_channels, 1, 1, 1)
+
         weight = weight.reshape(
             b * self.out_channels,
             self.in_channels,
@@ -72,10 +95,11 @@ class NoiseInjector(nn.Module):
         noise = torch.randn(b, 1, h, w, device=x.device)
         return x + self.weight * noise
 
-    
+
 class StyleBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, style_dim):
+    def __init__(self, in_channels, out_channels, style_dim, upsample=True):
         super().__init__()
+        self.upsample = upsample
         self.conv = ModConv(in_channels, out_channels, 3, style_dim)
         self.noise_injector = NoiseInjector(out_channels)
         self.act = nn.LeakyReLU(.2)
@@ -110,21 +134,20 @@ class StyleGANG(nn.Module):
             self.blocks.append(
                 nn.Sequential(
                     StyleBlock(init_channels, out_channels, w_dim),
-                    StyleBlock(out_channels, out_channels, w_dim),
+                    StyleBlock(out_channels, out_channels, w_dim, upsample=i),
                 )
             )
-            self.rgbs.append(ToRGB(out_channels, w_dim))
+
+            self.rgbs.append(ModConv(out_channels, 3, 1, w_dim, demodulate=False))
             init_channels = out_channels
-        
+
     
     def synthesis(self, w):
         B = w.size(0)
         x = self.init_canvas.expand(B, *([-1]*3))
         rgb = None
 
-        for i, (block, to_rgb) in enumerate(zip(self.blocks, self.rgbs)):
-            if i:
-                x = F.interpolate(x, scale_factor=2, mode="bilinear", align_corners=True)
+        for block, to_rgb in enumerate(zip(self.blocks, self.rgbs)):
             for b in block:
                 x = b(x, w)
             rgb = F.interpolate(rgb, scale_factor=2, mode="bilinear", align_corners=True) \
@@ -165,6 +188,7 @@ class StyleGAND(nn.Module):
                     nn.LeakyReLU(.2),
                     nn.Conv2d(out_channels, out_channels, 3, padding=1),
                     nn.LeakyReLU(.2),
+                    nn.AvgPool2d(2)
                 )
             )
             in_channels = out_channels

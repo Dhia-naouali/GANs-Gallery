@@ -83,5 +83,7 @@ class Evaluator:
         }
         
 
-def main():
-    ...
+if __name__ == "__main__":
+    from src.models import *
+    def main(checkpoint_path):
+        ...

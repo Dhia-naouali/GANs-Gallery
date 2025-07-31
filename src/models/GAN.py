@@ -17,22 +17,19 @@ class SelfAttention(nn.Module):
 
         self.q = nn.Conv2d(in_channels, in_channels // 8, 1)
         self.k = nn.Conv2d(in_channels, in_channels // 8, 1)
-        self.v = nn.Conv2d(in_channels, in_channels // 8, 1)
-
-        self.proj = nn.Conv2d(in_channels // 8, in_channels, 1)
+        self.v = nn.Conv2d(in_channels, in_channels, 1)
 
         self.alpha = nn.Parameter(torch.zeros(1))
 
     def forward(self, x):
-        bs, c, h, w = x.size()
+        b, c, h, w = x.size()
 
-        query = self.q(x).view(bs, -1, h*w).permute(0, 2, 1) # .T eq
-        key = self.k(x).view(bs, -1, h*w)
-        value = self.v(x).view(bs, -1, h*w)
+        query = self.q(x).view(b, -1, h*w).permute(0, 2, 1)
+        key = self.k(x).view(b, -1, h*w)
+        value = self.v(x).view(b, -1, h*w)
 
         attention = F.softmax(torch.bmm(query, key), dim=-1)
-        out = torch.bmm(value, attention.permute(0, 2, 1)).view(bs, value.size(1), h, w)
-        out = self.proj(out)
+        out = torch.bmm(value, attention.permute(0, 2, 1)).view(b, c, h, w)
         return self.alpha * out + x
 
 
@@ -146,7 +143,7 @@ class GANG(nn.Module):
         self.projector = nn.Sequential(
             nn.Linear(lat_dim, init_channels * (self.init_size**2)),
             nn.BatchNorm1d(init_channels * (self.init_size**2)),
-            nn.ReLU()
+            nn.ReLU(inplace=True)
         )
 
         block_kwargs = {
@@ -159,6 +156,7 @@ class GANG(nn.Module):
             "use_SN": use_SN
         }
 
+
         self.layers = []
         in_channels = init_channels
         for i in range(depth-1):
@@ -170,20 +168,18 @@ class GANG(nn.Module):
                     **block_kwargs
                 )
             )
-            if use_SA and i in self.attention_layers or True:
+            if use_SA and i in self.attention_layers:
                 self.layers.append(SelfAttention(out_channels))
             in_channels = out_channels
-        
-        # last layer
+
+
         self.layers.append(
             nn.ConvTranspose2d(
                 in_channels,
                 3,
-                **{
-                    "kernel_size":4,
-                    "stride":2,
-                    "padding":1,
-                },
+                kernel_size=4,
+                stride=2,
+                padding=1,
                 bias=False
             )
         )
@@ -196,7 +192,7 @@ class GANG(nn.Module):
     def synthesis(self, w):
         return torch.tanh(self.layers(w))
 
-    def forward(self, z, return_w=False):
+    def forward(self, z):
         w = self.mapper(z)
         return self.synthesis(w)
 
