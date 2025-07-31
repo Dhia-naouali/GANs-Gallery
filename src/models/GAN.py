@@ -202,8 +202,6 @@ class GAND(nn.Module):
     def __init__(
             self,
             channels,
-            hidden_dim,
-            depth,
             attention_layers=None,
             norm="batch",
             activation="elu",
@@ -226,9 +224,9 @@ class GAND(nn.Module):
                 }
 
 
-        in_channels = 3
+        in_channels = channels[0]
         self.layers = []
-        for i in range(depth):
+        for i in range(len(channels[1:])):
             out_channels = channels[i]
             self.layers.append(
                 ConvBlock(

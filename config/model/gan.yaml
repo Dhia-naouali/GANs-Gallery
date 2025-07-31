@@ -3,19 +3,17 @@ lat_dim: 128
 norm: batch
 spectral_norm: false
 self_attention: false
-activation: elu
+activation: relu
 leak: 0.2
 
 generator:
-  hidden_dim: 32
+  channels: [512, 256, 256, 128, 128, 3]
   activation: relu
   norm: batch
-  depth: 6
-  attention_layers: 
+  attention_layers: []
 
 discriminator: 
-  hidden_dim: 32
   activation: elu
   norm: none
   spectral_norm: false
-  depth: 6
+  channels: [3, 64, 128, 128, 256]
