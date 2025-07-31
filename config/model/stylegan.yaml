@@ -4,4 +4,4 @@ generator:
   lat_dim: 256
 
 discriminator:
-
+  zeft: "a"

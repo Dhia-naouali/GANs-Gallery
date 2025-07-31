@@ -104,7 +104,7 @@ class StyleGANG(nn.Module):
         self.blocks = nn.ModuleList()
         self.rgbs = nn.ModuleList()
 
-        for _ in range(depth):
+        for i in range(depth):
             out_channels = init_channels // (2**i)
             self.blocks.append(
                 nn.Sequential(
