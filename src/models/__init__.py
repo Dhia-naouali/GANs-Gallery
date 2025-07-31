@@ -15,7 +15,7 @@ def setup_models(config):
             "leak": retrieve("leak", 0.1),
             "use_SA": retrieve("use_SA", False),
             "use_SN": retrieve("use_SN", False),
-            "attention_layers": None
+            "attention_layers": retrieve("attention_layers", None)
         }
 
         generator = GANG(
@@ -31,7 +31,7 @@ def setup_models(config):
             "leak": retrieve("leak", 0.1),
             "use_SA": retrieve("use_SA", False),
             "use_SN": retrieve("use_SN", False),
-            "attention_layers": None
+            "attention_layers": retrieve("attention_layers", None)
         }
 
 
