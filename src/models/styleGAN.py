@@ -28,7 +28,7 @@ class Mapper(nn.Module):
 class AdaIN(nn.Module):
     def __init__(self, ):
         super().__init__()
-        ...        
+        ...
         
         
 class ModConv(nn.Module): 
@@ -69,7 +69,7 @@ class NoiseInjector(nn.Module):
         
     def forward(self, x):
         b, _, h, w = x.shape
-        noise = torch.randn(b, 1, h, w)
+        noise = torch.randn(b, 1, h, w, device=x.device)
         return x + self.weight * noise
 
     

@@ -33,7 +33,7 @@ class BCELoss(Loss):
         )
 
     def generator_loss(self, fake_logits, real_logits):
-        return self.criterion(fake_logits, self._real_labels)
+        return self.criterion(fake_logits, self.real_labels)
 
     def discriminator_loss(self, fake_logits, real_logits):
         real_loss = self.criterion(real_logits, self.real_labels)

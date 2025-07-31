@@ -19,6 +19,8 @@ class SelfAttention(nn.Module):
         self.k = nn.Conv2d(in_channels, in_channels // 8, 1)
         self.v = nn.Conv2d(in_channels, in_channels // 8, 1)
 
+        self.proj = nn.Conv2d(in_channels // 8, in_channels, 1)
+
         self.alpha = nn.Parameter(torch.zeros(1))
 
     def forward(self, x):
@@ -30,6 +32,7 @@ class SelfAttention(nn.Module):
 
         attention = F.softmax(torch.bmm(query, key), dim=-1)
         out = torch.bmm(value, attention.permute(0, 2, 1)).view(bs, value.size(1), h, w)
+        out = self.proj(out)
         return self.alpha * out + x
 
 
