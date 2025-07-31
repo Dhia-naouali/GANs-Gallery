@@ -43,7 +43,7 @@ class Evaluator:
     
     
     @torch.no_grad()
-    def evalute(self, batch_size, num_batches):
+    def evalute(self, num_batches):
         self.FID.reset()
         self.IS.reset()
         self.KID.reset()

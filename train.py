@@ -20,11 +20,12 @@ from src.utils import (
     CheckpointManager,
     generate_sample_images,
     save_sample_images,
+    EMA
 )
 from src.models import setup_models
 from src.data import setup_dataloader, AdaptiveDiscriminatorAugmentation
 from src.losses import setup_loss, R1Regularizer, PathLengthREgularizer
-
+from .evaluate import Evaluator
 
 torch.set_default_device("cuda:0")
 device = torch.device("cuda:0")
@@ -33,19 +34,16 @@ torch._functorch.config.donated_buffer = False
 
 class Trainer:
     def __init__(self, config):
-        # compile ?
-
         self.config = config
-        seed_all() # seed dali
+        seed_all()
         setup_directories(self.config)
 
 
-        # wegith init within
+        # weigth init within
         self.G, self.D = setup_models(config.model)
+        self.G_ema = EMA(self.G)
+        self.G_ema.register()
 
-        print("#"*40)
-        print(self.config.training.compile)
-        print("#"*40)
         if self.config.training.compile:
             self.G = torch.compile(self.G, mode="max-autotune-no-cudagraphs")
             self.D = torch.compile(self.D, mode="max-autotune-no-cudagraphs")
@@ -83,7 +81,7 @@ class Trainer:
             self.G_optimizer,
             self.D_optimizer
         )
-
+        self.evaluator = Evaluator(self.G, self.dataloader, config, self.batch_size, device)
         self.tracker = MetricsTracker(log_freq=self.config.wandb.log_freq)
         self.NOISE = torch.randn(16, self.config.model.lat_dim)
         
@@ -147,6 +145,7 @@ class Trainer:
             D_loss, fake_acc, real_acc, real_logits = self.D_train_step(real_images)
         G_loss = self.G_train_step(real_logits.detach())
         
+        self.G_ema.update()
         return {
             "G_loss": G_loss,
             "D_loss": D_loss,
@@ -343,14 +342,21 @@ class Trainer:
                     epoch,
                     epoch_metrics
                 )
+            
+            if not epoch % self.evaluate_every:
+                self.G_ema.apply_moving()
+                evals = self.evaluator.evalute(len(self.dataloader))
+                wandb.log(evals)
+                self.G_ema.restore()
                 
 
     @torch.no_grad()
     def generate_samples(self, epoch):
         self.G.eval()
         
+        self.G_ema.apply_moving()
         sample_grid = generate_sample_images(
-            self.G,
+            self.G_ema.module,
             self.NOISE
         )
 
@@ -358,6 +364,7 @@ class Trainer:
         sample_path = os.path.join(self.config.sample_dir, f"epoch_{epoch:04d}.png")
         save_sample_images(sample_grid, sample_path, rows=4)
         wandb.log({f"sample_{epoch:03f}": wandb.Image(make_grid(sample_grid, nrow=4, normalize=True, value_range=(0, 1)))})
+        self.G_ema.restore()
         self.G.train()
 
 

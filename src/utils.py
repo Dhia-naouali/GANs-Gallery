@@ -27,7 +27,7 @@ def count_params(model, trainable_only=False):
 
 @torch.no_grad
 def generate_sample_images(
-        generator, # EMA primarily
+        generator,
         noise,
     ):
     generator.eval()
@@ -326,3 +326,7 @@ class EMA:
                 self.backup[name] = param.data
                 param.data = self.moving[name]
 
+    def restore(self):
+        for name, param in self.G.named_parameters():
+            if param.requires_grad:
+                param.data = self.backup[name]
