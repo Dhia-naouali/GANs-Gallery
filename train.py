@@ -20,7 +20,6 @@ from src.utils import (
     CheckpointManager,
     generate_sample_images,
     save_sample_images,
-    init_model_params,
 )
 from src.models import setup_models
 from src.data import setup_dataloader, AdaptiveDiscriminatorAugmentation
@@ -41,10 +40,9 @@ class Trainer:
         setup_directories(self.config)
 
 
-        # (muP ?), hold on buddy brb
+        # wegith init within
         self.G, self.D = setup_models(config.model)
-        init_model_params(self.G)
-        init_model_params(self.D)
+
         print("#"*40)
         print(self.config.training.compile)
         print("#"*40)

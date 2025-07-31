@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-
+from ..utils import init_weights
 
 
 class EqualizedLR:
@@ -108,16 +108,6 @@ class StyleBlock(nn.Module):
         x = self.conv(x, style)
         x = self.noise_injector(x)
         return self.act(x)
-
-
-class ToRGB(nn.Module):
-    def __init__(self, in_channels, style_dim):
-        super().__init__()
-        self.conv = ModConv(in_channels, 3, 1, style_dim, demodulate=False)
-    
-    def forward(self, x, style):
-        return self.conv(x, style)
-
     
     
 class StyleGANG(nn.Module):
@@ -140,6 +130,16 @@ class StyleGANG(nn.Module):
 
             self.rgbs.append(ModConv(out_channels, 3, 1, w_dim, demodulate=False))
             init_channels = out_channels
+        
+        init_weights(self)
+        for layer in self.mapper.layers:
+            if isinstance(layer, EqualizedLR):
+                layer._init_weights()
+        
+        for block in self.blocks:
+            for b in block:
+                if isinstance(b, EqualizedLR):
+                    b.conv.style_projector._init_weights()            
 
     
     def synthesis(self, w):
@@ -201,6 +201,8 @@ class StyleGAND(nn.Module):
             nn.Flatten(),
             nn.Linear(in_channels, 1)
         )
+        init_weights(self)
+        
         
     def forward(self, x):
         x = self.blocks(x)

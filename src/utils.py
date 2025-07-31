@@ -273,7 +273,7 @@ class CheckpointManager:
 
 
 
-def init_model_params(model, init_scheme="normal", gain=0.02):
+def init_weights(model, init_scheme="normal", gain=0.02):
     def init_func(module):
         modulename = module.__class__.__name__
         if hasattr(module, "weight") and ("Conv" in modulename or "Linear" in modulename):

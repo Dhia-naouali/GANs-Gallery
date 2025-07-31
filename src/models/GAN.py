@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from torch.nn.utils import spectral_norm
-
+from ..utils import init_weights
 
 class PixelNorm(nn.Module):
     def forward(self, x):
@@ -185,6 +185,8 @@ class GANG(nn.Module):
         )
         self.layers = nn.Sequential(*self.layers)
 
+        init_weights(self)
+
 
     def mapper(self, z):
         return self.projector(z).view(z.size(0), -1, self.init_size, self.init_size)
@@ -244,7 +246,8 @@ class GAND(nn.Module):
             nn.Flatten(),
             nn.Linear(in_channels, 1)
         )
-        
+        init_weights(self)
+
 
     def forward(self, x):
         x = self.layers(x)
