@@ -91,7 +91,7 @@ class AdaptiveDiscriminatorAugmentation(AugmentationSequential):
         initial_p: float = 0.,
         adjustment_speed: float = 1e-2,
         max_p: float = 0.8,
-        target_real_acc: float = 0.85,
+        target_real_acc: float = 0.6,
         ema_lambda: float = 0.99,
         update_every: int = 5,
         erasing_scale: Union[Tensor, Tuple[float, float]] = (0.02, 0.25),
