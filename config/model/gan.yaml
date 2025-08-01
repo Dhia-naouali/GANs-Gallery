@@ -7,7 +7,7 @@ activation: elu
 leak: 0.2
 
 generator:
-  channels: [1024, 512, 256, 128, 3]
+  channels: [1024, 512, 256, 128, 64, 3]
   init_size: 4
   activation: elu
   norm: batch
@@ -17,4 +17,4 @@ discriminator:
   activation: elu
   norm: none
   spectral_norm: false
-  channels: [3, 64, 128, 256]
+  channels: [3, 64, 128, 256, 512, 1024]
