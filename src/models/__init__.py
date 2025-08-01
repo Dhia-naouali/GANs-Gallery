@@ -41,10 +41,9 @@ def setup_models(config):
 
     elif config.get("name", "StyleGAN"):
         generator = StyleGANG(
+            channels=config.generator.get("chanenls", [256, 256, 128, 128, 64]),
             lat_dim=config.generator.get("lat_dim", 128),
             w_dim=config.generator.get("w_dim", 128),
-            channels=config.generator.get("chanenls", [256, 256, 128, 128, 64]),
-            init_channels=config.generator.get("hidden_dim", 128)
         )
 
         discriminator = StyleGAND(

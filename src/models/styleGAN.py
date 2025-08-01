@@ -5,9 +5,10 @@ import torch.nn.functional as F
 from ..utils import init_weights
 
 
-class EqualizedLR:
+class EqualizedLR(nn.Module):
     # "weight" scaling at run time !!! sweeet
     def __init__(self, module, gain=1):
+        super().__init__()
         self.module = module
         self.gain = gain
         self._init_weights()

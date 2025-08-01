@@ -53,7 +53,7 @@ class _Conv(nn.Module):
             case "relu":
                 self.activation = nn.ReLU(inplace=True)
             case "leaky_relu":
-                self.activation = nn.LeakyReLU(leak, inlace=True)
+                self.activation = nn.LeakyReLU(leak, inplace=True)
             case "elu":
                 self.activation = nn.ELU(inplace=True)
             case "swich":

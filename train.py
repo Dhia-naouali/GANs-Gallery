@@ -356,7 +356,7 @@ class Trainer:
         
         self.G_ema.apply_moving()
         sample_grid = generate_sample_images(
-            self.G_ema.module,
+            self.G_ema.G,
             self.NOISE
         )
 

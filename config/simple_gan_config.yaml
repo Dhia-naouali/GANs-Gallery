@@ -14,7 +14,7 @@ training:
   compile: true
   save_every: 40
   sample_every: 10
-  evaluate_every: 10
+  evaluate_every: 4
   beta1: 0.5
   beta2: 0.9
   n_critic: 1

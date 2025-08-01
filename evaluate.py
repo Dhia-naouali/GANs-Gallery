@@ -1,5 +1,6 @@
 # pip install torchmetrics[image]
 import torch
+from torch.amp import autocast
 
 from torchmetrics.image.kid import KernelInceptionDistance
 from torchmetrics.image.fid import FrechetInceptionDistance
@@ -25,7 +26,7 @@ class Evaluator:
 
     @torch.no_grad
     def generate_samples(self, num_batches):
-        for _ in num_batches:            
+        for _ in range(num_batches):
             noise = torch.randn(
                 self.batch_size,
                 self.config.model.lat_dim,
@@ -36,9 +37,10 @@ class Evaluator:
             yield (samples * .5 + .5).byte()
     
 
-    def load_samples(self, dataloader, num_batches):
-        for _ in tqdm(num_batches):
-            samples = next(dataloader)[0]["image"]
+    def load_samples(self, num_batches):
+        real_iter = iter(self.dataloader)
+        for _ in range(num_batches):
+            samples = next(real_iter)[0]["images"]
             yield (samples * .5 + .5).byte()
     
     
@@ -52,19 +54,19 @@ class Evaluator:
         fake_gen = self.generate_samples(num_batches)
         real_gen = self.load_samples(num_batches)
 
+        with autocast(device_type=self.device.type):
+            for _ in tqdm(range(num_batches)):
+                fake_images = next(fake_gen)
+                real_images = next(real_gen)
 
-        for _ in tqdm(range(num_batches)):
-            fake_images = next(fake_gen)
-            real_images = next(real_gen)
 
-
-            self.FID.update(fake_images, real=False)
-            self.FID.update(real_images, real=True)
-            self.IS.update(fake_images)
-            self.KID.update(fake_images, real=False)
-            self.KID.update(real_images, real=True)
-
-            lpips_score += self.LPIPS(fake_images, real_images).mean().item()
+                self.FID.update(fake_images, real=False)
+                self.FID.update(real_images, real=True)
+                self.IS.update(fake_images)
+                self.KID.update(fake_images, real=False)
+                self.KID.update(real_images, real=True)
+                raise Exception(fake_images.shape, real_images.shape)
+                lpips_score += self.LPIPS(fake_images, real_images).mean().item()
 
 
         fid_score = self.FID.compute().item()
