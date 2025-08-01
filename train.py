@@ -89,8 +89,8 @@ class Trainer:
         self.setup_optimizers()
         self.setup_loss_and_regs()
 
-        self.G_scaler = GradScaler()
-        self.D_scaler = GradScaler()
+        self.G_scaler = GradScaler(init_scale=2**5)
+        self.D_scaler = GradScaler(init_scale=2**5)
 
         self.checkpoint_manager = CheckpointManager(
             self.config.checkpoint_dir,
@@ -187,7 +187,7 @@ class Trainer:
         r1_penalty = torch.tensor(0)
         gradient_penalty = torch.tensor(0)
 
-        with autocast(device_type="cuda", enabled=False):
+        with autocast(device_type="cuda", enabled=True):
             noise = torch.randn(self.batch_size, self.G.lat_dim)
             real_images = self.ada(real_images) if self.ada else real_images
             real_logits = self.D(real_images)
@@ -226,7 +226,7 @@ class Trainer:
         self.G.zero_grad(set_to_none=True)
         path_length_penalty = torch.tensor(0)
         
-        with autocast(device_type="cuda", enabled=False):
+        with autocast(device_type="cuda", enabled=True):
             noise = torch.randn(self.batch_size, self.G.lat_dim)
             fake_images = self.G(noise)
             fake_logits = self.D(fake_images)
@@ -259,7 +259,7 @@ class Trainer:
         noise = torch.randn(self.batch_size, self.G.lat_dim)
 
         with torch.cuda.stream(self.losses_stream):
-            with autocast(device_type="cuda", enabled=False):
+            with autocast(device_type="cuda", enabled=True):
                 if self.ada:
                     real_images = self.ada(real_images, real_acc=self.real_acc)
 
