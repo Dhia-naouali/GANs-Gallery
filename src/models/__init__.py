@@ -9,7 +9,8 @@ def setup_models(config):
         specific=config.generator
         generator_config = {
             "lat_dim": retrieve("lat_dim", 128),
-            "channels": retrieve("chanenls", [512, 256, 256, 128, 128, 64]),
+            "channels": retrieve("channels", [512, 256, 256, 128, 128, 64]),
+            "init_size": retrieve("init_size", 4),
             "norm": retrieve("norm", "batch"),
             "activation": retrieve("activation", "leaky_relu"),
             "leak": retrieve("leak", 0.1),

@@ -306,6 +306,7 @@ class EMA:
         self.decay = decay
         self.moving = {}
         self.backup = {}
+        self._initialized = False
 
 
     def register(self):
@@ -314,6 +315,10 @@ class EMA:
                 self.moving[name] = param.data.clone()
     
     def update(self):
+        if not self._initialized:
+            self.register()
+            self._initialized = True
+
         for name, param in self.G.named_parameters():
             if param.requires_grad:
                 self.moving[name] = self.decay * self.moving[name] +\
@@ -325,8 +330,10 @@ class EMA:
             if param.requires_grad:
                 self.backup[name] = param.data
                 param.data = self.moving[name]
+            self.G.eval()
 
     def restore(self):
         for name, param in self.G.named_parameters():
             if param.requires_grad:
                 param.data = self.backup[name]
+            self.G.train()

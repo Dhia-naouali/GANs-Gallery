@@ -88,10 +88,10 @@ class AdaptiveDiscriminatorAugmentation(AugmentationSequential):
     def __init__(
         self,
         *args: Union[_AugmentationBase, ImageSequential],
-        initial_p: float = 1e-5,
+        initial_p: float = 1e-2,
         adjustment_speed: float = 1e-2,
-        max_p: float = 0.8,
-        target_real_acc: float = 0.85,
+        max_p: float = 0.7,
+        target_real_acc: float = 0.8,
         ema_lambda: float = 0.99,
         update_every: int = 5,
         erasing_scale: Union[Tensor, Tuple[float, float]] = (0.02, 0.33),

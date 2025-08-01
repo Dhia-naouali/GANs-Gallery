@@ -7,7 +7,8 @@ activation: relu
 leak: 0.2
 
 generator:
-  channels: [512, 512, 256, 256, 128, 3]
+  channels: [1024, 1024, 512, 512, 256, 128, 3]
+  init_size: 1
   activation: relu
   norm: batch
   attention_layers: []
@@ -16,4 +17,4 @@ discriminator:
   activation: elu
   norm: none
   spectral_norm: false
-  channels: [3, 64, 128, 128, 256, 256]
+  channels: [3, 64, 64, 128, 128, 256, 256, 512]

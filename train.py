@@ -32,6 +32,22 @@ device = torch.device("cuda:0")
 torch._functorch.config.donated_buffer = False
 
 
+def _assert_finite(t, name):
+    if torch.isnan(t).any() or torch.isinf(t).any():
+        raise RuntimeError(f"{name} contains NaN/Inf")
+    
+    
+    
+    
+def _nan_hook(self):
+    def _hook(module, inp, out):
+        # works for both single tensor and tuple outputs
+        tensors = out if isinstance(out, (tuple, list)) else (out,)
+        for i, t in enumerate(tensors):
+            if isinstance(t, torch.Tensor):
+                _assert_finite(t, f"{module.__class__.__name__}_out[{i}]")
+    return _hook
+
 class Trainer:
     def __init__(self, config):
         self.config = config
@@ -42,7 +58,6 @@ class Trainer:
         # weigth init within
         self.G, self.D = setup_models(config.model)
         self.G_ema = EMA(self.G)
-        self.G_ema.register()
 
         if self.config.training.compile:
             self.G = torch.compile(self.G, mode="max-autotune-no-cudagraphs")
@@ -53,6 +68,9 @@ class Trainer:
         
         print(self.G)
         print(self.D)
+        for net, name in [(self.G, "G"), (self.D, "D")]:
+            for m in net.modules():
+                m.register_forward_hook(_nan_hook(self))
         print(f"Generator: {count_params(self.G) * 1e-6:.2f} \n"
               f"Discriminator: {count_params(self.D) * 1e-6:.2f}")
 
@@ -141,25 +159,35 @@ class Trainer:
 
 
     def train_step(self, real_images):
-        for _ in range(self.n_critic):
-            D_loss, fake_acc, real_acc, real_logits = self.D_train_step(real_images)
-        G_loss = self.G_train_step(real_logits.detach())
-        
-        self.G_ema.update()
-        return {
-            "G_loss": G_loss,
-            "D_loss": D_loss,
-            "real_acc": real_acc,
-            "fake_acc": fake_acc,
-        }
+        try:
+            for _ in range(self.n_critic):
+                D_loss, fake_acc, real_acc, real_logits = self.D_train_step(real_images)
+            G_loss = self.G_train_step(real_logits.detach())
+            self.G_ema.update()
+            return {"G_loss": G_loss, "D_loss": D_loss,
+                    "real_acc": real_acc, "fake_acc": fake_acc}
 
+        except RuntimeError as e:
+            if "NaN/Inf" in str(e):
+                print(f"NaN detected: {e}")
+                # save checkpoint for inspection
+                torch.save({
+                    "epoch": getattr(self, "epoch", 0),
+                    "batch": getattr(self, "batch_idx", 0),
+                    "G_state": self.G.state_dict(),
+                    "D_state": self.D.state_dict(),
+                    "real_images": real_images,
+                }, f"nan_dump_{int(time.time())}.pt")
+                raise Exception(real_images.min(), real_images.max())
+            else:
+                raise Exception(real_images.min(), real_images.max())
 
     def D_train_step(self, real_images):
         self.D.zero_grad(set_to_none=True)
         r1_penalty = torch.tensor(0)
         gradient_penalty = torch.tensor(0)
 
-        with autocast(device_type="cuda"):
+        with autocast(device_type="cuda", enabled=False):
             noise = torch.randn(self.batch_size, self.G.lat_dim)
             real_images = self.ada(real_images) if self.ada else real_images
             real_logits = self.D(real_images)
@@ -170,6 +198,7 @@ class Trainer:
 
             fake_logits = self.D(fake_images)
             D_loss = self.criterion.discriminator_loss(fake_logits, real_logits)
+            _assert_finite(D_loss, "D_loss")
 
             if self.r1_regularizer:
                 r1_penalty = self.r1_regularizer(real_logits, real_images)
@@ -179,7 +208,8 @@ class Trainer:
 
             D_loss += r1_penalty + gradient_penalty        
             self.D_scaler.scale(D_loss).backward()
-            torch.nn.utils.clip_grad_norm_(self.D.parameters(), max_norm=2.0)
+            self.D_scaler.unscale_(self.D_optimizer)
+            torch.nn.utils.clip_grad_norm_(self.D.parameters(), max_norm=1.0)
             self.D_scaler.step(self.D_optimizer)
             self.D_scaler.update()
             self.D_scheduler.step()
@@ -196,11 +226,12 @@ class Trainer:
         self.G.zero_grad(set_to_none=True)
         path_length_penalty = torch.tensor(0)
         
-        with autocast(device_type="cuda"):
+        with autocast(device_type="cuda", enabled=False):
             noise = torch.randn(self.batch_size, self.G.lat_dim)
             fake_images = self.G(noise)
             fake_logits = self.D(fake_images)
             G_loss = self.criterion.generator_loss(fake_logits, real_logits)
+            _assert_finite(G_loss, "G_loss")
             
             if self.path_length_regularizer:
                 w = self.G.mapper(noise)
@@ -209,7 +240,8 @@ class Trainer:
 
         G_loss += path_length_penalty
         self.G_scaler.scale(G_loss).backward()
-        torch.nn.utils.clip_grad_norm_(self.G.parameters(), max_norm=2.0)
+        self.G_scaler.unscale_(self.G_optimizer)
+        torch.nn.utils.clip_grad_norm_(self.G.parameters(), max_norm=1.0)
         self.G_scaler.step(self.G_optimizer)
         self.G_scaler.update()
         self.G_scheduler.step()
@@ -227,7 +259,7 @@ class Trainer:
         noise = torch.randn(self.batch_size, self.G.lat_dim)
 
         with torch.cuda.stream(self.losses_stream):
-            with autocast(device_type="cuda"):
+            with autocast(device_type="cuda", enabled=False):
                 if self.ada:
                     real_images = self.ada(real_images, real_acc=self.real_acc)
 
@@ -320,7 +352,7 @@ class Trainer:
 
         for batch_idx, real_images in enumerate(pbar):
             real_images = real_images[0]["images"]
-            real_images = real_images
+            real_images = real_images.float()
             step_metrics = self.train_step(real_images)
             self.tracker.log(step_metrics, batch_idx, pbar=pbar)
             
@@ -345,18 +377,20 @@ class Trainer:
             
             if not epoch % self.config.training.evaluate_every:
                 self.G_ema.apply_moving()
-                evals = self.evaluator.evalute(len(self.dataloader))
+                self.G.eval()
+                self.D.eval()
+                evals = self.evaluator.evaluate(len(self.dataloader))
                 wandb.log(evals)
                 self.G_ema.restore()
-                
+                self.G.train()
+                self.D.train()
 
     @torch.no_grad()
     def generate_samples(self, epoch):
-        self.G.eval()
         
         self.G_ema.apply_moving()
         sample_grid = generate_sample_images(
-            self.G_ema.G,
+            self.G,
             self.NOISE
         )
 
@@ -365,7 +399,6 @@ class Trainer:
         save_sample_images(sample_grid, sample_path, rows=4)
         wandb.log({f"sample_{epoch:03f}": wandb.Image(make_grid(sample_grid, nrow=4, normalize=True, value_range=(0, 1)))})
         self.G_ema.restore()
-        self.G.train()
 
 
 @hydra.main(config_path="config", config_name="defaults.yaml", version_base=None)

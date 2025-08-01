@@ -126,6 +126,7 @@ class GANG(nn.Module):
             lat_dim,
             channels,
             attention_layers=None,
+            init_size=4,
             norm="batch",
             activation="elu",
             leak=.1,
@@ -136,7 +137,7 @@ class GANG(nn.Module):
         self.lat_dim = lat_dim
         self.attention_layers = attention_layers or []
 
-        self.init_size = 4
+        self.init_size = init_size
         init_channels  = lat_dim // (self.init_size**2)
 
         self.projector = nn.Sequential(

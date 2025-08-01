@@ -7,6 +7,7 @@ from torchmetrics.image.fid import FrechetInceptionDistance
 from torchmetrics.image.inception import InceptionScore
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
 
+import itertools
 from tqdm import tqdm
 
 
@@ -38,14 +39,14 @@ class Evaluator:
     
 
     def load_samples(self, num_batches):
-        real_iter = iter(self.dataloader)
+        real_iter = itertools.cycle(self.dataloader)
         for _ in range(num_batches):
-            samples = next(real_iter)[0]["images"]
-            yield (samples * .5 + .5).byte()
-    
+            batch = next(real_iter)[0]["images"]
+            yield (batch * .5 + .5).byte()
+        
     
     @torch.no_grad()
-    def evalute(self, num_batches):
+    def evaluate(self, num_batches):
         self.FID.reset()
         self.IS.reset()
         self.KID.reset()
@@ -54,19 +55,18 @@ class Evaluator:
         fake_gen = self.generate_samples(num_batches)
         real_gen = self.load_samples(num_batches)
 
-        with autocast(device_type=self.device.type):
-            for _ in tqdm(range(num_batches)):
-                fake_images = next(fake_gen)
-                real_images = next(real_gen)
+        # with autocast(device_type=self.device.type):
+        for _ in tqdm(range(num_batches)):
+            fake_images = next(fake_gen)
+            real_images = next(real_gen)
 
 
-                self.FID.update(fake_images, real=False)
-                self.FID.update(real_images, real=True)
-                self.IS.update(fake_images)
-                self.KID.update(fake_images, real=False)
-                self.KID.update(real_images, real=True)
-                raise Exception(fake_images.shape, real_images.shape)
-                lpips_score += self.LPIPS(fake_images, real_images).mean().item()
+            self.FID.update(fake_images, real=False)
+            self.FID.update(real_images, real=True)
+            self.IS.update(fake_images)
+            self.KID.update(fake_images, real=False)
+            self.KID.update(real_images, real=True)
+            lpips_score += self.LPIPS(fake_images, real_images).mean().item()
 
 
         fid_score = self.FID.compute().item()
