@@ -41,7 +41,7 @@ class Evaluator:
     def load_samples(self, num_batches):
         real_iter = itertools.cycle(self.dataloader)
         for _ in range(num_batches):
-            batch = next(real_iter)[0]["images"].float()
+            batch = next(real_iter)[0]["images"]
             yield (batch * .5 + .5).byte()
         
     

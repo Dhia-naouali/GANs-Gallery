@@ -192,7 +192,8 @@ class GANG(nn.Module):
         return self.projector(z).view(z.size(0), -1, self.init_size, self.init_size)
 
     def synthesis(self, w):
-        return torch.tanh(self.layers(w))
+        w = self.layers(w)
+        return torch.tanh(w)
 
     def forward(self, z):
         w = self.mapper(z)

@@ -1,15 +1,15 @@
 name: GAN
-lat_dim: 256
+lat_dim: 128
 norm: batch
 spectral_norm: false
 self_attention: false
-activation: relu
+activation: elu
 leak: 0.2
 
 generator:
-  channels: [1024, 1024, 512, 512, 256, 128, 3]
-  init_size: 1
-  activation: relu
+  channels: [1024, 512, 256, 128, 3]
+  init_size: 4
+  activation: elu
   norm: batch
   attention_layers: []
 
@@ -17,4 +17,4 @@ discriminator:
   activation: elu
   norm: none
   spectral_norm: false
-  channels: [3, 64, 64, 128, 128, 256, 256, 512]
+  channels: [3, 64, 128, 256]

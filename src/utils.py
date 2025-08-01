@@ -273,7 +273,7 @@ class CheckpointManager:
 
 
 
-def init_weights(model, init_scheme="kaiming", gain=0.005):
+def init_weights(model, init_scheme="kaiming", gain=0.01):
     def init_func(module):
         modulename = module.__class__.__name__
         if hasattr(module, "weight") and ("Conv" in modulename or "Linear" in modulename):
@@ -310,13 +310,11 @@ class EMA:
 
 
     def register(self):
-        return 
         for name, param in self.G.named_parameters():
             if param.requires_grad:
                 self.moving[name] = param.data.clone()
     
     def update(self):
-        return 
         if not self._initialized:
             self.register()
             self._initialized = True
@@ -328,7 +326,6 @@ class EMA:
 
 
     def apply_moving(self):
-        return 
         for name, param in self.G.named_parameters():
             if param.requires_grad:
                 self.backup[name] = param.data
@@ -336,7 +333,6 @@ class EMA:
             self.G.eval()
 
     def restore(self):
-        return 
         for name, param in self.G.named_parameters():
             if param.requires_grad:
                 param.data = self.backup[name]

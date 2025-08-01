@@ -8,8 +8,8 @@ defaults:
 
 optimizer:
   name: adam
-  G_lr: 2e-5
-  D_lr: 1e-5
+  G_lr: 12e-5
+  D_lr: 8e-5
 
 
 training:
@@ -20,9 +20,9 @@ training:
   save_every: 40
   sample_every: 10
   evaluate_every: 4
-  beta1: 0.5
+  beta1: 0.0
   beta2: 0.9
-  n_critic: 1
+  n_critic: 3
 
 loss:
   criterion: bce # bce, hinge, wgan_gp, ragan

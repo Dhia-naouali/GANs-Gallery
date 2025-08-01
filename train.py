@@ -32,22 +32,6 @@ device = torch.device("cuda:0")
 torch._functorch.config.donated_buffer = False
 
 
-def _assert_finite(t, name):
-    if torch.isnan(t).any() or torch.isinf(t).any():
-        raise RuntimeError(f"{name} contains NaN/Inf")
-    
-    
-    
-    
-def _nan_hook(self):
-    def _hook(module, inp, out):
-        # works for both single tensor and tuple outputs
-        tensors = out if isinstance(out, (tuple, list)) else (out,)
-        for i, t in enumerate(tensors):
-            if isinstance(t, torch.Tensor):
-                _assert_finite(t, f"{module.__class__.__name__}_out[{i}]")
-    return _hook
-
 class Trainer:
     def __init__(self, config):
         self.config = config
@@ -68,12 +52,8 @@ class Trainer:
         
         print(self.G)
         print(self.D)
-        for net, name in [(self.G, "G"), (self.D, "D")]:
-            for m in net.modules():
-                m.register_forward_hook(_nan_hook(self))
         print(f"Generator: {count_params(self.G) * 1e-6:.2f} \n"
               f"Discriminator: {count_params(self.D) * 1e-6:.2f}")
-
 
 
         # compiling ada didn't go well
@@ -89,8 +69,8 @@ class Trainer:
         self.setup_optimizers()
         self.setup_loss_and_regs()
 
-        self.G_scaler = GradScaler(init_scale=2**5)
-        self.D_scaler = GradScaler(init_scale=2**5)
+        self.G_scaler = GradScaler()
+        self.D_scaler = GradScaler()
 
         self.checkpoint_manager = CheckpointManager(
             self.config.checkpoint_dir,
@@ -159,28 +139,19 @@ class Trainer:
 
 
     def train_step(self, real_images):
-        try:
-            for _ in range(self.n_critic):
-                D_loss, fake_acc, real_acc, real_logits = self.D_train_step(real_images)
-            G_loss = self.G_train_step(real_logits.detach())
-            self.G_ema.update()
-            return {"G_loss": G_loss, "D_loss": D_loss,
-                    "real_acc": real_acc, "fake_acc": fake_acc}
+        for _ in range(self.n_critic):
+            D_loss, fake_acc, real_acc, real_logits = self.D_train_step(real_images)
 
-        except RuntimeError as e:
-            if "NaN/Inf" in str(e):
-                print(f"NaN detected: {e}")
-                # save checkpoint for inspection
-                torch.save({
-                    "epoch": getattr(self, "epoch", 0),
-                    "batch": getattr(self, "batch_idx", 0),
-                    "G_state": self.G.state_dict(),
-                    "D_state": self.D.state_dict(),
-                    "real_images": real_images,
-                }, f"nan_dump_{int(time.time())}.pt")
-                raise Exception(real_images.min(), real_images.max())
-            else:
-                raise Exception(real_images.min(), real_images.max())
+        G_loss = self.G_train_step(real_logits.detach())
+        self.G_ema.update()
+        
+        return {
+            "G_loss": G_loss,
+            "D_loss": D_loss,
+            "real_acc": real_acc,
+            "fake_acc": fake_acc
+        }
+
 
     def D_train_step(self, real_images):
         self.D.zero_grad(set_to_none=True)
@@ -191,14 +162,21 @@ class Trainer:
             noise = torch.randn(self.batch_size, self.G.lat_dim)
             real_images = self.ada(real_images) if self.ada else real_images
             real_logits = self.D(real_images)
+            # real_logits = real_logits.clamp(-10, 10)
             
             with torch.no_grad():
-                fake_images = self.ada(self.G(noise), real_acc=self.real_acc) \
-                    if self.ada else self.G(noise)
+                fake_images = self.G(noise)
+                if self.ada:
+                    temp = self.ada(fake_images)
+                    if (~torch.isfinite(temp)).any():
+                        print(f"Kornia {(~torch.isfinite(fake_images)).sum().item()} !!!!!!!!!!!! {fake_images.min()}, {fake_images.max()}, {fake_images.mean()}, {fake_images.std()}")
+                    else:
+                        fake_images = temp
+
 
             fake_logits = self.D(fake_images)
+            # fake_logits = fake_logits.clamp(-10, 10)
             D_loss = self.criterion.discriminator_loss(fake_logits, real_logits)
-            _assert_finite(D_loss, "D_loss")
 
             if self.r1_regularizer:
                 r1_penalty = self.r1_regularizer(real_logits, real_images)
@@ -230,8 +208,8 @@ class Trainer:
             noise = torch.randn(self.batch_size, self.G.lat_dim)
             fake_images = self.G(noise)
             fake_logits = self.D(fake_images)
+            # fake_logits = fake_logits.clamp(-10, 10)
             G_loss = self.criterion.generator_loss(fake_logits, real_logits)
-            _assert_finite(G_loss, "G_loss")
             
             if self.path_length_regularizer:
                 w = self.G.mapper(noise)
@@ -352,7 +330,8 @@ class Trainer:
 
         for batch_idx, real_images in enumerate(pbar):
             real_images = real_images[0]["images"]
-            real_images = real_images.float()
+            if (~torch.isfinite(real_images)).any():
+                raise Exception("Dali loader !!!!!!!!!!!!")
             step_metrics = self.train_step(real_images)
             self.tracker.log(step_metrics, batch_idx, pbar=pbar)
             
@@ -381,7 +360,7 @@ class Trainer:
                 self.D.eval()
                 evals = self.evaluator.evaluate(len(self.dataloader))
                 wandb.log(evals)
-                self.G_ema.restore()
+                # self.G_ema.restore()
                 self.G.train()
                 self.D.train()
 
@@ -398,7 +377,8 @@ class Trainer:
         sample_path = os.path.join(self.config.sample_dir, f"epoch_{epoch:04d}.png")
         save_sample_images(sample_grid, sample_path, rows=4)
         wandb.log({f"sample_{epoch:03f}": wandb.Image(make_grid(sample_grid, nrow=4, normalize=True, value_range=(0, 1)))})
-        self.G_ema.restore()
+        # self.G_ema.restore()
+        self.G.train()
 
 
 @hydra.main(config_path="config", config_name="defaults.yaml", version_base=None)
