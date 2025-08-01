@@ -1,0 +1,73 @@
+
+
+defaults:
+  - data: afhq
+  - optimizer: adam
+  - scheduler: warm_up_linear
+  - wandb: default
+  - _self_
+
+
+model:
+  name: wgan_gp
+  lat_dim: 128
+  generator:
+    channels: [512, 512, 256, 256, 128, 128, 3]
+    norm: "instance"
+    activation: "relu"
+    use_SA: false
+    use_SN: true
+  discriminator:
+    norm: "none"
+    channels: [3, 64, 128, 128, 256, 256]
+    activation: "leaky_relu"
+    leak: 0.2
+    use_SA: false
+    use_SN: true
+
+loss:
+  criterion: "wgan_gp"
+  grad_penalty: 6.0
+
+training:
+  batch_size: 32
+  image_size: 256
+  epochs: 160
+  n_critic: 4
+  beta1: 0.5
+  beta2: 0.9
+  G_lr: 0.0001
+  D_lr: 0.0001
+  save_every: 40
+  sample_every: 10
+  evalute_every: 10
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+loss:
+  criterion: bce # bce, hinge, wgan_gp, ragan
+  grad_penalty: 0 # > 0 to use, only used with wgan_gp
+  r1_penalty: 0 # > 0 to use
+  path_length_penalty: 0 # > 0 to use
+
+seed: 12
+ADA:
+  use_ADA: True
+  ada_target_acc: 0.8
+
+log_dir: ./logs
+checkpoint_dir: ./checkpoints
+sample_dir: ./samples
