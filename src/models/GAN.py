@@ -156,15 +156,16 @@ class GANG(nn.Module):
             leak=.1,
             use_SA=False,
             use_SN=True,
-            upsample="deconv"
+            upsample="deconv",
         ):
         super().__init__()
         if upsample == "deconv":
-            BLOCK = DeConvBlock
+            upsample = ["deconv"] * len(channels)
         elif upsample == "interpolation":
-            BLOCK = UpsampleConvBlock
-        else:
-            raise Exception(f"invalid upsampling method: {upsample}")
+            upsample = ["interpolation"] * len(channels)
+
+        assert len(channels) == len(upsample)
+
 
         self.lat_dim = lat_dim
         self.attention_layers = attention_layers or []
@@ -193,6 +194,10 @@ class GANG(nn.Module):
         in_channels = init_channels
         for i in range(len(channels)):
             out_channels = channels[i]
+            if upsample[i] == "deconv":
+                BLOCK = DeConvBlock
+            else:
+                BLOCK = UpsampleConvBlock
             self.layers.append(
                 BLOCK(
                     in_channels,
