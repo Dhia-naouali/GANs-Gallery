@@ -157,7 +157,7 @@ class AdaptiveDiscriminatorAugmentation(AugmentationSequential):
             RandomHorizontalFlip(p=1),
             RandomRotation90(times=(0, 3), p=1.0),
             RandomErasing(scale=scale, ratio=ratio, value=value, p=0.9),
-            # RandomAffine(degrees=10, translate=(0.1, 0.1), scale=(0.9, 1.1), p=1.0),
+            RandomAffine(degrees=10, translate=(0.1, 0.1), scale=(0.9, 1.1), p=1.0),
             ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, p=1.0),
             RandomGaussianNoise(std=0.02, p=1.0),
         )
