@@ -1,0 +1,58 @@
+defaults:
+  - data: afhq
+  - scheduler: warm_up_linear
+  - wandb: default
+  - _self_
+
+model:
+  name: GAN
+  lat_dim: 128
+  norm: batch
+  spectral_norm: false
+  self_attention: false
+  activation: elu
+  leak: 0.2
+  generator:
+    channels: [1024, 1024, 512, 512, 256, 128, 3]
+    init_size: 1
+    activation: elu
+    norm: batch
+    attention_layers: []
+  discriminator:
+    activation: elu
+    norm: none
+    spectral_norm: true
+    channels: [3, 64, 64, 128, 128, 256, 256, 512, 1024]
+
+
+optimizer:
+  name: adam
+  G_lr: 0.00014
+  D_lr: 1.6e-05
+
+training:
+  epochs: 160
+  batch_size: 32
+  image_size: 256
+  compile: false
+  save_every: 40
+  sample_every: 10
+  evaluate_every: 4
+  beta1: 0.1
+  beta2: 0.9
+  n_critic: 1
+
+loss:
+  criterion: ragan
+  grad_penalty: 0
+  r1_penalty: 0
+  path_length_penalty: 0
+
+seed: 12
+
+ADA:
+  use_ADA: true
+
+log_dir: ./logs
+checkpoint_dir: ./checkpoints
+sample_dir: ./samples
