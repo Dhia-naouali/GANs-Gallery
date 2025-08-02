@@ -14,6 +14,24 @@ the aim of this project is to create more of'em
 </p>
 
 
+# Cool findings
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/ragan_mid_training_interpolation.png" width="80%"><br>
+      interpolation upsampling RAGAN Generated images mid training<br>  
+    </td>
+    <td align="center">
+      <img src="images/ragan_mid_training_deconv.png" width="80%"><br>
+      DeConv upsampling RAGAN Generated images mid training<br>  
+    </td>
+  </tr>
+</table>
+
+
+
+# Samples (in progress)
+**exploiting kaggle until someone gift me a cluster to practive DDP and spend a couple of months building an on the fly optimization framework for parallel experimentations**
 ### Base Model
 (demons that look like cats when u squint your eyes)
 <p align="center">
@@ -34,4 +52,4 @@ to `Nvidia-dali`: data loading (nvidia never failed to amaze me) and `Kornia` au
 
 
 #### concurrent computation of losses and penalties (when possible :'))
-[current]
+*(experiemnts with cuda streams wheren't robust (depending on torch.compile) thus only used in optimization experiementations :'( )*
