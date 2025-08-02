@@ -14,15 +14,16 @@ model:
   leak: 0.2
   generator:
     channels: [1024, 1024, 512, 512, 256, 128, 3]
-    init_size: 1
+    init_size: 2
     activation: elu
     norm: batch
     attention_layers: []
+    upsample: interpolation
   discriminator:
     activation: elu
     norm: none
     spectral_norm: true
-    channels: [3, 64, 64, 128, 128, 256, 256, 512, 1024]
+    channels: [3, 64, 64, 128, 128, 256, 512, 1024]
 
 
 optimizer:

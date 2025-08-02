@@ -116,7 +116,31 @@ class DeConvBlock(_Conv):
         )
 
         super().__init__(conv, out_channels, norm, activation, leak, use_SN)
-        
+
+class UpsampleConvBlock(_Conv):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        kernel_size=3,
+        stride=1,
+        padding=1,
+        norm="batch",
+        activation="elu",
+        interpolation="nearest",
+        leak=.1,
+        use_SN=True
+    ):
+        class _upsampleConv(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
+            def forward(self, x):
+                return self.conv(
+                    F.interpolate(x, scale_factor=2, mode=interpolation)
+                )
+        super().__init__(_upsampleConv(), out_channels, norm, activation, leak, use_SN)
+
 
 
 # renaming it to gang cuz it's funnier
@@ -132,8 +156,16 @@ class GANG(nn.Module):
             leak=.1,
             use_SA=False,
             use_SN=True,
+            upsample="deconv"
         ):
         super().__init__()
+        if upsample == "deconv":
+            BLOCK = DeConvBlock
+        elif upsample == "interpolation":
+            BLOCK = UpsampleConvBlock
+        else:
+            raise Exception(f"invalid upsampling method: {upsample}")
+
         self.lat_dim = lat_dim
         self.attention_layers = attention_layers or []
 
@@ -162,7 +194,7 @@ class GANG(nn.Module):
         for i in range(len(channels)):
             out_channels = channels[i]
             self.layers.append(
-                DeConvBlock(
+                BLOCK(
                     in_channels,
                     out_channels,
                     **block_kwargs
@@ -172,17 +204,6 @@ class GANG(nn.Module):
                 self.layers.append(SelfAttention(out_channels))
             in_channels = out_channels
 
-
-        self.layers.append(
-            nn.ConvTranspose2d(
-                in_channels,
-                3,
-                kernel_size=4,
-                stride=2,
-                padding=1,
-                bias=False
-            )
-        )
         self.layers = nn.Sequential(*self.layers)
 
         init_weights(self)

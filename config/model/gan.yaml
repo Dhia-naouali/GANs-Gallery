@@ -7,11 +7,12 @@ activation: elu
 leak: 0.2
 
 generator:
-  channels: [1024, 512, 256, 128, 64, 3]
+  channels: [1024, 512, 512, 256, 128, 64, 3]
   init_size: 4
   activation: elu
   norm: batch
   attention_layers: []
+  upsample: deconv
 
 discriminator: 
   activation: elu
