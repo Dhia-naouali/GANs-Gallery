@@ -209,6 +209,22 @@ class GANG(nn.Module):
                 self.layers.append(SelfAttention(out_channels))
             in_channels = out_channels
 
+        block_kwargs["stride"] = 1
+        self.layers.append(
+            ConvBlock(
+                out_channels,
+                out_channels,
+                **block_kwargs
+            )
+        )
+        self.layers.append(
+            ConvBlock(
+                out_channels,
+                3,
+                **block_kwargs
+            )
+        )
+            
         self.layers = nn.Sequential(*self.layers)
 
         init_weights(self)
