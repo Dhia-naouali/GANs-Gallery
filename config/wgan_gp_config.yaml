@@ -1,6 +1,5 @@
 defaults:
   - data: afhq
-  - optimizer: adam
   - scheduler: warm_up_linear
   - wandb: default
   - _self_
@@ -15,6 +14,7 @@ model:
     activation: "relu"
     use_SA: false
     use_SN: true
+    init_size: 2
   discriminator:
     norm: "none"
     channels: [3, 64, 128, 128, 256, 256]
@@ -41,6 +41,10 @@ training:
   sample_every: 10
   evaluate_every: 4
 
+optimizer:
+  name: adam
+  G_lr: 2e-4
+  D_lr: 5e-5
 
 seed: 12
 ADA:
