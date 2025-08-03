@@ -1,4 +1,3 @@
-# pip install torchmetrics[image]
 import torch
 from torch.amp import autocast
 
@@ -35,14 +34,14 @@ class Evaluator:
             )
             
             samples = self.G(noise)
-            yield (samples * .5 + .5).byte()
+            yield samples * .5 + .5
     
 
     def load_samples(self, num_batches):
         real_iter = itertools.cycle(self.dataloader)
         for _ in range(num_batches):
             batch = next(real_iter)[0]["images"]
-            yield (batch * .5 + .5).byte()
+            yield batch * .5 + .5
         
     
     @torch.no_grad()
@@ -80,7 +79,7 @@ class Evaluator:
                 "IS_mean": mean_is,
                 "IS_std": std_is,
                 "KID_mean": mean_kid,
-                "KID_mean": std_kid,
+                "KID_std": std_kid,
                 "LPIPS": lpips_score,
             }
         
