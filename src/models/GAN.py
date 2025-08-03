@@ -210,6 +210,7 @@ class GANG(nn.Module):
             in_channels = out_channels
 
         block_kwargs["stride"] = 1
+        block_kwargs["kernel_size"] = 3
         self.layers.append(
             ConvBlock(
                 out_channels,

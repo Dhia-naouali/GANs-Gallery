@@ -215,8 +215,8 @@ class PathLengthREgularizer:
             retain_graph=True,
             only_inputs=True
         )[0].norm(2, dim=1)
-        
-        
+
+
         if self.plp_ema is not None:
             self.plp_ema = self.lambda_ema * self.plp_ema + (1 - self.lambda_ema) * grads.mean().detach()
         else:
