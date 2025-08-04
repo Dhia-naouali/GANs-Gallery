@@ -1,9 +1,8 @@
 ADA:
   use_ADA: true
-  ada_target_acc: 0.8
 
 data:
-  root_dir: "data/afhq/cat"
+  root_dir: /kaggle/input/animal-faces/afhq/train/cat
   image_size: 256
 
 loss:
@@ -19,9 +18,6 @@ model:
   name: GAN
   norm: batch
   lat_dim: 128
-  activation: elu
-  spectral_norm: false
-  self_attention: false
   generator:
     norm: batch
     channels:
@@ -31,40 +27,49 @@ model:
       - 512
       - 256
       - 128
-      - 3
-    init_size: 1
+      - 32
+    upsample:
+      - interpolation
+      - interpolation
+      - interpolation
+      - interpolation
+      - deconv
+      - deconv
+      - deconv
+    init_size: 2
     activation: elu
-    upsample: deconv
     attention_layers: []
+  activation: elu
   discriminator:
     norm: none
     channels:
       - 3
       - 64
-      - 64
       - 128
-      - 128
-      - 256
       - 256
       - 512
       - 1024
     activation: elu
     spectral_norm: true
+  spectral_norm: false
+  self_attention: false
+
 
 wandb:
-  notes: "first run"
-  project: "GANs"
+  notes: first run
+  project: GANs
   log_freq: 50
   log_grads: false
   log_params: false
   log_samples: true
 
 
+
 training:
-  beta1: 0.32
+  beta1: 0.0
   beta2: 0.9
   epochs: 160
-  compile: false
+  compile: true
   n_critic: 4
   batch_size: 32
   image_size: 256
@@ -73,7 +78,7 @@ training:
   evaluate_every: 4
 
 optimizer:
-  D_lr: 0.00007
+  D_lr: 0.00005
   G_lr: 0.0003
   name: adam
 
@@ -82,6 +87,6 @@ scheduler:
   min_lr: 0.0002
   warm_up_phase: 0.01
 
-sample_dir: "./samples"
-checkpoint_dir: "./checkpoints"
-log_dir: "./logs"
+log_dir: ./logs
+sample_dir: ./samples
+checkpoint_dir: ./checkpoints
