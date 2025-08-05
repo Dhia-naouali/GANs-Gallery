@@ -50,7 +50,7 @@ class HiingeLoss(Loss):
     def __init__(self, *args, **kwargs):
         super().__init__()
 
-    def generator_loss(self, fake_logits):
+    def generator_loss(self, fake_logits, real_logits):
         return -fake_logits.mean()
     
     def discriminator_loss(self, fake_logits, real_logits):
