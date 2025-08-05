@@ -14,11 +14,11 @@ model:
   leak: 0.2
 
   generator:
-    channels: [1024, 512, 256, 128, 64]
+    channels: [1024, 512, 256, 128, 64, 32]
     init_size: 4
     activation: elu
     norm: batch
-    attention_layers: [2]   # Self-attention after 3rd upsample block
+    attention_layers: [2]
     upsample: [deconv, deconv, deconv, interpolation, interpolation]
 
   discriminator:
@@ -26,20 +26,20 @@ model:
     norm: none
     spectral_norm: true
     channels: [3, 64, 128, 256, 512, 1024]
-    attention_layers: [3]   # Self-attention in 4th downsample block
+    attention_layers: [3]
 
 optimizer:
   name: adam
   G_lr: 4e-4
   D_lr: 1e-4
-  beta1: 0.5
-  beta2: 0.999
 
 training:
   epochs: 160
   batch_size: 32
   image_size: 256
   compile: true
+  beta1: 0.5
+  beta2: 0.999
   save_every: 20
   sample_every: 10
   evaluate_every: 4
