@@ -19,7 +19,7 @@ model:
     activation: elu
     norm: batch
     attention_layers: [2]
-    upsample: [deconv, deconv, deconv, interpolation, interpolation]
+    upsample: [deconv, deconv, deconv, deconv, interpolation, interpolation]
 
   discriminator:
     activation: elu
