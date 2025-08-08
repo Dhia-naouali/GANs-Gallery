@@ -81,7 +81,13 @@ class Trainer:
         )
         self.evaluator = Evaluator(self.G, self.dataloader, config, self.batch_size, device)
         self.tracker = MetricsTracker(log_freq=self.config.wandb.log_freq)
-        self.NOISE = torch.randn(16, self.config.model.lat_dim)
+
+        if config.model.get("name", "GAN").upper() == "GAN":
+            self.noise_dim = (self.config.model.lat_dim, )
+        else:
+            self.noise_dim = (self.G.num_styles, self.config.model.lat_dim)
+        
+        self.NOISE = torch.randn(16, *self.noise_dim)
         
         self.penalties_stream = torch.cuda.Stream()
         self.losses_stream = torch.cuda.Stream()
@@ -159,7 +165,7 @@ class Trainer:
         gradient_penalty = torch.tensor(0)
 
         with autocast(device_type="cuda", enabled=True):
-            noise = torch.randn(self.batch_size, self.G.lat_dim)
+            noise = torch.randn(self.batch_size, *self.noise_dim)
             real_images = self.ada(real_images) if self.ada else real_images
             real_logits = self.D(real_images)
             # real_logits = real_logits.clamp(-10, 10)
@@ -205,7 +211,7 @@ class Trainer:
         path_length_penalty = torch.tensor(0)
         
         with autocast(device_type="cuda", enabled=True):
-            noise = torch.randn(self.batch_size, self.G.lat_dim)
+            noise = torch.randn(self.batch_size, *self.noise_dim)
             fake_images = self.G(noise)
             fake_logits = self.D(fake_images)
             # fake_logits = fake_logits.clamp(-10, 10)
@@ -234,7 +240,7 @@ class Trainer:
         r1_penalty = torch.tensor(0)
         gradient_penalty = torch.tensor(0)
 
-        noise = torch.randn(self.batch_size, self.G.lat_dim)
+        noise = torch.randn(self.batch_size, *self.noise_dim)
 
         with torch.cuda.stream(self.losses_stream):
             with autocast(device_type="cuda", enabled=True):
