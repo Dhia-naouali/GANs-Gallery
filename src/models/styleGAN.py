@@ -200,7 +200,7 @@ class BatchSTD(nn.Module):
     def forward(self, x):
         _, _, h, w = x.shape
         std = torch.sqrt(
-            x.var(dim=1, keepdim=True, unbiased=False) + 1e-8
+            x.var(dim=1, keepdim=True, unbiased=False) + 1e-4
         ).mean(dim=(2, 3), keepdim=True)
 
         std = torch.nan_to_num(std, nan=0.0, posinf=1e4, neginf=-1e4)

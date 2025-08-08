@@ -85,7 +85,11 @@ class Trainer:
         else:
             self.noise_dim = (self.G.num_styles, self.config.model.lat_dim)
         
-        self.NOISE = torch.randn(16, *self.noise_dim)
+        self.NOISE = torch.randn(2, *self.noise_dim)
+        
+        x = self.D(self.G(self.NOISE))
+        print(x.min(), x.max(), x.mean(), x.std())
+        print(x.isfinite().all())
         self.evaluator = Evaluator(self.G, self.dataloader, config, self.batch_size, device, self.noise_dim)
         self.tracker = MetricsTracker(log_freq=self.config.wandb.log_freq)
         
@@ -217,6 +221,12 @@ class Trainer:
             fake_logits = self.D(fake_images)
             # fake_logits = fake_logits.clamp(-10, 10)
             G_loss = self.criterion.generator_loss(fake_logits, real_logits)
+            for zeft_name, zeft in zip(["logs", "images", "loss"], [fake_logits, fake_images, G_loss]):
+                print()
+                print(zeft_name, zeft.isfinite().all(), zeft.min(), zeft.max(), zeft.mean(), zeft.std())
+                print()
+                print()
+                print()
             
             if self.path_length_regularizer:
                 w = self.G.mapper(noise)
@@ -230,6 +240,9 @@ class Trainer:
         self.G_scaler.step(self.G_optimizer)
         self.G_scaler.update()
         self.G_scheduler.step()
+        if not G_loss.isfinite().all():
+            raise Exception()
+
 
         return G_loss.item()
 
