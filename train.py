@@ -85,11 +85,7 @@ class Trainer:
         else:
             self.noise_dim = (self.G.num_styles, self.config.model.lat_dim)
         
-        self.NOISE = torch.randn(2, *self.noise_dim)
-        
-        x = self.D(self.G(self.NOISE))
-        print(x.min(), x.max(), x.mean(), x.std())
-        print(x.isfinite().all())
+        self.NOISE = torch.randn(16, *self.noise_dim)
         self.evaluator = Evaluator(self.G, self.dataloader, config, self.batch_size, device, self.noise_dim)
         self.tracker = MetricsTracker(log_freq=self.config.wandb.log_freq)
         
@@ -221,35 +217,21 @@ class Trainer:
             fake_logits = self.D(fake_images)
             # fake_logits = fake_logits.clamp(-10, 10)
             G_loss = self.criterion.generator_loss(fake_logits, real_logits)
-            for zeft_name, zeft in zip(["logs", "images", "loss"], [fake_logits, fake_images, G_loss]):
-                print()
-                print(zeft_name, zeft.isfinite().all(), zeft.min(), zeft.max(), zeft.mean(), zeft.std())
-                print()
-                print()
-                print()
             
-            if not G_loss.isfinite().all():
-                raise Exception()
             if self.path_length_regularizer:
-                print("a"*200)
                 w = self.G.mapper(noise)
+                w = w[:, 0].detach().repeat(1, w.size(1), 1)
+                w.requires_grad_(True)
                 fake_images_ = self.G.synthesis(w)
                 path_length_penalty = self.path_length_regularizer(fake_images_, w)
 
-        if not G_loss.isfinite().all():
-            raise Exception()
         G_loss += path_length_penalty
-        if not G_loss.isfinite().all():
-            raise Exception(G_loss, path_length_penalty)
         self.G_scaler.scale(G_loss).backward()
         self.G_scaler.unscale_(self.G_optimizer)
         torch.nn.utils.clip_grad_norm_(self.G.parameters(), max_norm=1.0)
         self.G_scaler.step(self.G_optimizer)
         self.G_scaler.update()
         self.G_scheduler.step()
-        if not G_loss.isfinite().all():
-            raise Exception()
-
 
         return G_loss.item()
 
