@@ -46,7 +46,7 @@ class BCELoss(Loss):
 
 
 
-class HiingeLoss(Loss):
+class HingeLoss(Loss):
     def __init__(self, *args, **kwargs):
         super().__init__()
 
@@ -153,7 +153,7 @@ class RelavisticAverageGANLoss(Loss):
 
 LOSSES = {
     "bce": BCELoss,
-    "hinge": HiingeLoss,
+    "hinge": HingeLoss,
     "wgan_gp": WGANGPLoss,
     "ragan": RelavisticAverageGANLoss
 }

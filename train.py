@@ -93,7 +93,6 @@ class Trainer:
         self.losses_stream = torch.cuda.Stream()
         self.G_loss_computed = torch.cuda.Event()
         self.plp_computed = torch.cuda.Event()
-        print(self.G(self.NOISE).shape)
 
 
     def setup_optimizers(self):
