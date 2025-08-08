@@ -141,7 +141,7 @@ class StyleGANG(nn.Module):
         for block in self.blocks:
             for b in block:
                 if isinstance(b, EqualizedLR):
-                    b.conv.style_projector._init_weights()            
+                    b.conv.style_projector._init_weights()
 
     
     def synthesis(self, w):
@@ -149,7 +149,7 @@ class StyleGANG(nn.Module):
         x = self.init_canvas.expand(B, *([-1]*3))
         rgb = None
 
-        for block, to_rgb in enumerate(zip(self.blocks, self.rgbs)):
+        for block, to_rgb in zip(self.blocks, self.rgbs):
             for b in block:
                 x = b(x, w)
             rgb = F.interpolate(rgb, scale_factor=2, mode="bilinear", align_corners=True) \
