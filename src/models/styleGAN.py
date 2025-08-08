@@ -155,7 +155,7 @@ class StyleGANG(nn.Module):
 
         in_channels = init_channels
         for i, out_channels in enumerate(channels):
-            upsample = (i > 0) or False
+            upsample = (i > 0) or (i == len(channels) // 2)
             self.blocks.append(
                 StyleBlock(in_channels, out_channels, w_dim, upsample=upsample)
             )
@@ -198,8 +198,12 @@ class StyleGANG(nn.Module):
 
 class BatchSTD(nn.Module):
     def forward(self, x):
-        b, _, h, w = x.shape
-        std = x.std(dim=1, keepdim=True).mean(dim=(2, 3), keepdim=True)
+        _, _, h, w = x.shape
+        std = torch.sqrt(
+            x.var(dim=1, keepdim=True, unbiased=False) + 1e-8
+        ).mean(dim=(2, 3), keepdim=True)
+
+        std = torch.nan_to_num(std, nan=0.0, posinf=1e4, neginf=-1e4)
         return torch.cat([
             x,
             std.expand(-1, 1, h, w)
