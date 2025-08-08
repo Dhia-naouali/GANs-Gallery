@@ -79,8 +79,6 @@ class Trainer:
             self.G_optimizer,
             self.D_optimizer
         )
-        self.evaluator = Evaluator(self.G, self.dataloader, config, self.batch_size, device)
-        self.tracker = MetricsTracker(log_freq=self.config.wandb.log_freq)
 
         if config.model.get("name", "GAN").upper() == "GAN":
             self.noise_dim = (self.config.model.lat_dim, )
@@ -88,11 +86,14 @@ class Trainer:
             self.noise_dim = (self.G.num_styles, self.config.model.lat_dim)
         
         self.NOISE = torch.randn(16, *self.noise_dim)
+        self.evaluator = Evaluator(self.G, self.dataloader, config, self.batch_size, device, self.noise_dim)
+        self.tracker = MetricsTracker(log_freq=self.config.wandb.log_freq)
         
         self.penalties_stream = torch.cuda.Stream()
         self.losses_stream = torch.cuda.Stream()
         self.G_loss_computed = torch.cuda.Event()
         self.plp_computed = torch.cuda.Event()
+        print(self.G(self.NOISE).shape)
 
 
     def setup_optimizers(self):
