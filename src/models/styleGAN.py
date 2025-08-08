@@ -155,7 +155,7 @@ class StyleGANG(nn.Module):
 
         in_channels = init_channels
         for i, out_channels in enumerate(channels):
-            upsample = (i > 0) or (i == len(channels) // 2)
+            upsample = i > 0
             self.blocks.append(
                 StyleBlock(in_channels, out_channels, w_dim, upsample=upsample)
             )
