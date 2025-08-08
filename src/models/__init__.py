@@ -44,6 +44,7 @@ def setup_models(config):
     elif config.get("name", "other").upper() == "STYLEGAN":
         generator = StyleGANG(
             lat_dim=config.get("lat_dim", 128),
+            init_channels=config.generator.get("init_channels", 128),
             channels=config.generator.get("chanenls", [256, 256, 128, 128, 64]),
             w_dim=config.generator.get("w_dim", 128),
         )
