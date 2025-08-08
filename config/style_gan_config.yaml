@@ -10,9 +10,9 @@ model:
   generator:
     w_dim: 512
     init_channels: 512
-    channels: [512, 512, 256, 128, 64, 32]
+    channels: [512, 512, 256, 128, 128, 64, 32]
   discriminator:
-    channels: [32, 64, 128, 256, 512, 512]
+    channels: [32, 64, 128, 256, 512]
 
 
 training:
@@ -28,7 +28,7 @@ training:
 
 optimizer:
   G_lr: 2e-4
-  D_lr: 2e-4
+  D_lr: 1e-4
 
 loss:
   criterion: hinge
