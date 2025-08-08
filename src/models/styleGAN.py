@@ -52,8 +52,9 @@ class AdaIN(nn.Module):
 
 
 class ModConv(nn.Module): 
-    def __init__(self, in_channels, out_channels, kernel_size, style_dim, demodulate=True):
+    def __init__(self, in_channels, out_channels, kernel_size, style_dim, demodulate=True, upsample=True):
         super().__init__()
+        self.upsample = upsample
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.kernel_size = kernel_size
@@ -100,8 +101,7 @@ class NoiseInjector(nn.Module):
 class StyleBlock(nn.Module):
     def __init__(self, in_channels, out_channels, style_dim, upsample=True):
         super().__init__()
-        self.upsample = upsample
-        self.conv = ModConv(in_channels, out_channels, 3, style_dim)
+        self.conv = ModConv(in_channels, out_channels, 3, style_dim, upsample=upsample)
         self.noise_injector = NoiseInjector(out_channels)
         self.act = nn.LeakyReLU(.2)
         
