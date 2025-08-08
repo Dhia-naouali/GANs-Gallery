@@ -167,6 +167,7 @@ class Trainer:
         with autocast(device_type="cuda", enabled=True):
             noise = torch.randn(self.batch_size, *self.noise_dim)
             real_images = self.ada(real_images) if self.ada else real_images
+            real_images.requires_grad_(True)
             real_logits = self.D(real_images)
             # real_logits = real_logits.clamp(-10, 10)
             
