@@ -228,12 +228,19 @@ class Trainer:
                 print()
                 print()
             
+            if not G_loss.isfinite().all():
+                raise Exception()
             if self.path_length_regularizer:
+                print("a"*200)
                 w = self.G.mapper(noise)
                 fake_images_ = self.G.synthesis(w)
                 path_length_penalty = self.path_length_regularizer(fake_images_, w)
 
+        if not G_loss.isfinite().all():
+            raise Exception()
         G_loss += path_length_penalty
+        if not G_loss.isfinite().all():
+            raise Exception(G_loss, path_length_penalty)
         self.G_scaler.scale(G_loss).backward()
         self.G_scaler.unscale_(self.G_optimizer)
         torch.nn.utils.clip_grad_norm_(self.G.parameters(), max_norm=1.0)
