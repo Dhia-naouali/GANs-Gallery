@@ -133,7 +133,7 @@ class StyleGANG(nn.Module):
             self.rgbs.append(ModConv(out_channels, 3, 1, w_dim, demodulate=False))
             init_channels = out_channels
         
-        init_weights(self)
+        init_weights(self, init_scheme="kaiming")
         for layer in self.mapper.layers:
             if isinstance(layer, EqualizedLR):
                 layer._init_weights()
@@ -202,7 +202,7 @@ class StyleGAND(nn.Module):
             nn.Flatten(),
             nn.Linear(in_channels, 1)
         )
-        init_weights(self)
+        init_weights(self, init_scheme="kaiming")
 
 
     def forward(self, x):

@@ -1,0 +1,45 @@
+defaults:
+  - data: afhq
+  - scheduler: warm_up_linear
+  - wandb: default
+  - _self_
+
+model:
+  name: StyleGAN
+  lat_dim: 512
+  generator:
+    w_dim: 512
+    channels: [512, 512, 256, 128, 64, 32]
+  discriminator:
+    channels: [32, 64, 128, 256, 512, 512, 512]
+
+
+training:
+  epochs: 1000        # :'''''')
+  batch_size: 16
+  beta1: 0.0
+  beta2: 0.99
+  compile: true
+  sample_every: 10
+  save_every: 100
+  evaluate_every: 10
+  n_critic: 1
+
+optimizer:
+  G_lr: 2e-4
+  D_lr: 2e-4
+
+loss:
+  criterion: hinge
+  grad_penalty: 0
+  r1_penalty: 13.1
+  path_length_penalty: 2
+
+
+ADA:
+  use_ADA: true
+
+
+log_dir: ./logs
+checkpoint_dir: ./checkpoints
+sample_dir: ./samples
