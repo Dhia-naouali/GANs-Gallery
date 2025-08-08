@@ -162,7 +162,7 @@ class StyleGANG(nn.Module):
             )
 
             self.rgbs.append(ToRGB(out_channels, w_dim))
-            init_channels = out_channels
+            in_channels = out_channels
         
         self.num_styles = len(self.blocks) * 2
         init_weights(self, init_scheme="kaiming")
