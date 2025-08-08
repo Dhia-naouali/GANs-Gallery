@@ -17,7 +17,7 @@ model:
 
 training:
   epochs: 1000        # :'''''')
-  batch_size: 16
+  batch_size: 32
   beta1: 0.0
   beta2: 0.99
   compile: true
