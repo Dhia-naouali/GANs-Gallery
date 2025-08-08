@@ -200,7 +200,6 @@ class StyleGANG(nn.Module):
 class BatchSTD(nn.Module):
     def forward(self, x):
         b, _, h, w = x.shape
-        x = torch.randn(3, 3)
         std = x.std(dim=0, keepdim=True).mean()
         return torch.cat([
             x,
