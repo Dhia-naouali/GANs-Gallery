@@ -11,12 +11,13 @@ from tqdm import tqdm
 
 
 class Evaluator:
-    def __init__(self, G, dataloader, config, batch_size, device): # may be used post training on cpu (ig ?)
+    def __init__(self, G, dataloader, config, batch_size, device, noise_dim): # may be used post training on cpu (ig ?)
         self.G = G.eval()
         self.dataloader = dataloader
         self.config = config
         self.batch_size = batch_size
         self.device = device
+        self.noise_dim = noise_dim
         
         self.FID = FrechetInceptionDistance(normalize=True).to(device)
         self.IS = InceptionScore(normalize=True).to(device)
@@ -29,7 +30,7 @@ class Evaluator:
         for _ in range(num_batches):
             noise = torch.randn(
                 self.batch_size,
-                self.config.model.lat_dim,
+                *self.noise_dim,
                 device=self.device
             )
             
