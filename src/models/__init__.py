@@ -4,7 +4,7 @@ from .styleGAN import StyleGANG, StyleGAND
 def setup_models(config):
     def retrieve(param, default):
         return specific.get(param, config.get(param, default))
-    if config.get("name", "GAN") == "GAN":
+    if config.get("name", "GAN").upper() == "GAN":
         
         specific=config.generator
         generator_config = {
@@ -41,15 +41,18 @@ def setup_models(config):
             **discriminator_config
         )
 
-    elif config.get("name", "StyleGAN"):
+    elif config.get("name", "other").upper() == "STYLEGAN":
         generator = StyleGANG(
+            lat_dim=config.get("lat_dim", 128),
             channels=config.generator.get("chanenls", [256, 256, 128, 128, 64]),
-            lat_dim=config.generator.get("lat_dim", 128),
             w_dim=config.generator.get("w_dim", 128),
         )
 
         discriminator = StyleGAND(
             channels = config.discriminator.get("channels", [64, 128, 128, 256]),
         )
+
+    else:
+        raise Exception(f"invalid or missing model name: {config.get('name')}")
 
     return generator, discriminator
