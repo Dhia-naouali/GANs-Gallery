@@ -142,11 +142,10 @@ class ToRGB(nn.Module):
     
 
 class StyleGANG(nn.Module):
-    def __init__(self, channels, lat_dim=256, w_dim=256):
+    def __init__(self, channels, lat_dim=256, w_dim=256, init_channels=256):
         super().__init__()
         self.lat_dim = lat_dim
         self.w_dim = w_dim
-        init_channels = channels[0]
         
         self.mapper = Mapper(lat_dim, w_dim)
         self.init_canvas = nn.Parameter(torch.randn(1, init_channels, 4, 4))
@@ -155,7 +154,7 @@ class StyleGANG(nn.Module):
         self.rgbs = nn.ModuleList()
 
         in_channels = init_channels
-        for i, out_channels in enumerate(channels[1:]):
+        for i, out_channels in enumerate(channels):
             upsample = i > 0
             self.blocks.append(
                 StyleBlock(in_channels, out_channels, w_dim, upsample=upsample)
