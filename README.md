@@ -30,19 +30,14 @@ the aim of this project is to create more of'em
 
 
 
-# Samples (in progress)
+# Samples
 **exploiting kaggle until someone gift me a cluster to practive DDP and spend a couple of months building an on the fly optimization framework for parallel experimentations**
 ### Base Model
 (demons that look like cats when u squint your eyes)
 <p align="center">
-  <img src="images/media_images_sample_150.000000_614_5ef65e6d082354bfb722.png" width="320"><br>
-  <em>base model samples</em>
+  <img src="images/GANs-samples.png" width="320"><br>
+  <em>selected samples from different models and configs</em>
 </p>
-
-```bash
-python train.py training.epochs=160 optimizer.D_lr=8e-5 optimizer.G_lr=12e-5
-```
-
 
 ## Optimization
 #### Data pipeline: Loading + Augmentation 3x speedup (minima optimization for both)
