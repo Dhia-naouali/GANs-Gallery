@@ -192,7 +192,7 @@ class R1Regularizer:
 
 
 class PathLengthREgularizer:
-    def __init__(self, plp_lambda=2, plp_ema=.99):
+    def __init__(self, plp_lambda=2, plp_ema=.9):
         self.lambda_pl = plp_lambda
         self.lambda_ema = plp_ema
         self.plp_ema = None
