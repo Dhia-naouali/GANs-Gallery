@@ -37,7 +37,7 @@ class EqualizedConv(EqualizedLR):
 
 
 class Mapper(nn.Module):
-    def __init__(self, z_dim, w_dim, depth=4):
+    def __init__(self, z_dim, w_dim, depth=8):
         super().__init__()
         self.eps = 1e-8
         self.layers = []
