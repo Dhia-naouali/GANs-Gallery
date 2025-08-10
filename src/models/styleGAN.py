@@ -11,28 +11,44 @@ class EqualizedLR(nn.Module):
         super().__init__()
     
     def _init_weights(self):
-        nn.init.normal_(self.module.weight)
-        if self.module.bias is not None:
-            nn.init.zeros_(self.module.bias)
-
-    def forward(self, x):
-        return self.module(x * self.scale)
-
+        nn.init.normal_(self.weight)
+        if self.bias is not None:
+            nn.init.zeros_(self.bias)
 
 class EqualizedLinear(EqualizedLR):
     def __init__(self, in_dim, out_dim, gain=2**-.5):
         super().__init__()
         self.module = nn.Linear(in_dim, out_dim)
+        self.weight = nn.Parameter(torch.randn(out_dim, in_dim))
+        self.bias = nn.Parameter(torch.zeros(out_dim))
         self.gain = gain
         self.fan_in = self.module.weight[0].numel()
         self.scale = self.gain * self.fan_in**-.5
+        
+    def forward(self, x):
+        return F.linear(x, self.weight * self.scale, bias=self.bias)
+
 
 class EqualizedConv(EqualizedLR):
-    def __init__(self, in_channels, out_channels, kernel_size=3, padding=1, gain=2**.5):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1, gain=2**.5):
         super().__init__()
-        self.module = nn.Conv2d(in_channels, out_channels, kernel_size, padding=padding)
+        self.strdie = stride
+        self.padding = padding
+        self.kernels = nn.Parameter(
+            torch.randn(                
+                out_channels,
+                in_channels,
+                kernel_size,
+                kernel_size
+            )
+        )
+        self.bias = nn.Parameter(torch.zeros(out_channels))
+
         self.fan_in = in_channels * kernel_size**2
         self.scale = gain * self.fan_in**-.5
+        
+    def forward(self, x):
+        return F.conv2d(x, self.kernels * self.scale, bias=self.bias, stride=self.stride, padding=self.padding)
 
 
 
