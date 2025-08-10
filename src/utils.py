@@ -301,7 +301,7 @@ def init_weights(model, init_scheme="normal", gain=0.02):
 
 
 class EMA:
-    def __init__(self, G, decay=.992):
+    def __init__(self, G, decay=.9):
         self.G = G
         self.decay = decay
         self.moving = {}
