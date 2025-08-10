@@ -32,9 +32,9 @@ class EqualizedLinear(EqualizedLR):
 class EqualizedConv(EqualizedLR):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1, gain=2**.5):
         super().__init__()
-        self.strdie = stride
+        self.stride = stride
         self.padding = padding
-        self.kernels = nn.Parameter(
+        self.weight = nn.Parameter(
             torch.randn(                
                 out_channels,
                 in_channels,
@@ -48,7 +48,7 @@ class EqualizedConv(EqualizedLR):
         self.scale = gain * self.fan_in**-.5
         
     def forward(self, x):
-        return F.conv2d(x, self.kernels * self.scale, bias=self.bias, stride=self.stride, padding=self.padding)
+        return F.conv2d(x, self.weight * self.scale, bias=self.bias, stride=self.stride, padding=self.padding)
 
 
 
