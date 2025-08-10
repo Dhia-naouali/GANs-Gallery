@@ -220,7 +220,6 @@ class Trainer:
             
             if self.path_length_regularizer:
                 w = self.G.mapper(noise)
-                w = w[:, 0].detach().repeat(1, w.size(1), 1)
                 w.requires_grad_(True)
                 fake_images_ = self.G.synthesis(w)
                 path_length_penalty = self.path_length_regularizer(fake_images_, w)
