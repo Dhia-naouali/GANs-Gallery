@@ -198,8 +198,9 @@ class PathLengthREgularizer:
         self.plp_ema = None
 
     def __call__(self, fake_images, w):
+        if len(w.shape) == 2:
+            w = w.unqueeze(1)
         fake_images.requires_grad_(True)
-        b = w.size(0)
         y_hat = torch.randn_like(fake_images) / (
             (fake_images.size(2) * fake_images.size(3)) ** .5
         )
@@ -211,12 +212,14 @@ class PathLengthREgularizer:
             create_graph=True,
             retain_graph=True,
             only_inputs=True
-        )[0].view(b, -1).norm(2, dim=1)
+        )[0]
+
+        plp = grads.norm(2, dim=2).pow(2).mean(1).sqrt()
 
 
         if self.plp_ema is not None:
-            self.plp_ema = self.lambda_ema * self.plp_ema + (1 - self.lambda_ema) * grads.mean().detach()
+            self.plp_ema = self.lambda_ema * self.plp_ema + (1 - self.lambda_ema) * plp.mean().detach()
         else:
-            self.plp_ema = grads.mean().detach()
+            self.plp_ema = plp.mean().detach()
             
-        return self.lambda_pl * ((grads - self.plp_ema) ** 2).mean()
+        return self.lambda_pl * ((plp - self.plp_ema) ** 2).mean()
