@@ -35,7 +35,7 @@ the aim of this project is to create more of'em
 ### Base Model
 (demons that look like cats when u squint your eyes)
 <p align="center">
-  <img src="images/GANs-samples.png" width="320"><br>
+  <img src="images/GANs-samples.png" width="720"><br>
   <em>selected samples from different models and configs</em>
 </p>
 
