@@ -267,7 +267,7 @@ class StyleGAND(nn.Module):
             nn.LeakyReLU(.2),
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
-            nn.Linear(out_channels, 1)
+            EqualizedLinear(out_channels, 1)
         )
         
         init_weights(self, init_scheme="kaiming")
