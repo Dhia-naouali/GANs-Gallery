@@ -1,4 +1,5 @@
 # Cars Generator
+**DCGAN, WHAN-GP, RAGAN, SAGAN, StyleGAN, ...**
 
 (polishing & uploading old project + learning a bunch of new things about GANs)
 
