@@ -83,7 +83,7 @@ class Trainer:
         if config.model.get("name", "GAN").upper() == "GAN":
             self.noise_dim = (self.config.model.lat_dim, )
         else:
-            self.noise_dim = (self.G.num_styles, self.config.model.lat_dim)
+            self.noise_dim = (len(self.G.blocks), self.config.model.lat_dim)
         
         self.NOISE = torch.randn(16, *self.noise_dim)
         self.evaluator = Evaluator(self.G, self.dataloader, config, self.batch_size, device, self.noise_dim)
@@ -219,7 +219,7 @@ class Trainer:
             G_loss = self.criterion.generator_loss(fake_logits, real_logits)
             
             if self.path_length_regularizer:
-                w = self.G.mapper(noise)
+                w = self.G.mapper(noise, mix=False)
                 w.requires_grad_(True)
                 fake_images_ = self.G.synthesis(w)
                 path_length_penalty = self.path_length_regularizer(fake_images_, w)
@@ -279,7 +279,7 @@ class Trainer:
                 # path length penalty, penalties stream
                 #################################################################
                 if self.path_length_regularizer:
-                    w = self.G.mapping(noise)
+                    w = self.G.mapping(noise, mix=False)
                     fake_images_ = self.G.synthesis(w)
                     path_length_penalty = self.path_length_regularizer(fake_images_, w)
 

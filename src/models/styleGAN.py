@@ -35,7 +35,7 @@ class EqualizedConv(EqualizedLR):
         self.stride = stride
         self.padding = padding
         self.weight = nn.Parameter(
-            torch.randn(                
+            torch.randn(
                 out_channels,
                 in_channels,
                 kernel_size,
@@ -66,11 +66,23 @@ class Mapper(nn.Module):
             
         self.layers = nn.Sequential(*self.layers)
     
-    def forward(self, z):
-        return self.layers(
+    def forward(self, z, mix=True):
+        w1 = self.layers(
             z / (torch.norm(z, dim=1, keepdim=True) + self.eps)
         )
-
+        if not mix:
+            return w1
+        
+        b = z.size(0)
+        n = z.size(1)
+        w2 = self.layers(torch.randn_like(z))
+        
+        mix_cut = torch.randint(1, n, (b,), device=z.device)
+        w = w1.clone()
+        for i in range(b):
+            cut = mix_cut[i].item()
+            w[i, cut:] = w2[i, cut:]
+        return w
 
 
 class AdaIN(nn.Module):
@@ -267,7 +279,7 @@ class StyleGAND(nn.Module):
             nn.LeakyReLU(.2),
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
-            nn.Linear(out_channels, 1)
+            EqualizedLinear(out_channels, 1)
         )
         
         init_weights(self, init_scheme="kaiming")
