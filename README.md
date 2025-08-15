@@ -32,7 +32,7 @@ the aim of this project is to create more of'em
 
 
 # Samples
-**exploiting kaggle until someone gift me a cluster to practive DDP and spend a couple of months building an on the fly optimization framework for parallel experimentations**
+**(exploiting kaggle until someone gift me a cluster to practive DDP and spend a couple of months building an on the fly optimization framework for parallel experimentations)**
 ### Base Model
 (demons that look like cats when u squint your eyes)
 <p align="center">
