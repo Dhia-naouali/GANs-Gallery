@@ -9,12 +9,6 @@ some combinations include cows, tuxedos and
 the sure thing is they make our FYPs much more intertaining
 the aim of this project is to create more of'em 
 
-<p align="center">
-  <img src="images/rick_n_morty.jpg" width="640"><br>
-  <em>admire the stars morty (none atm)</em>
-</p>
-
-
 # Cool findings
 <table>
   <tr>
@@ -37,7 +31,7 @@ the aim of this project is to create more of'em
 (demons that look like cats when u squint your eyes)
 <p align="center">
   <img src="images/GANs-samples.png" width="720"><br>
-  <em>selected samples from different models and configs</em>
+  <em>selected samples from different models and configs at varying training phases</em>
 </p>
 
 ## Optimization
@@ -46,6 +40,13 @@ the aim of this project is to create more of'em
 in the `data-optimization branch` I switched from the conventional `open-cv`, `albumentation` and `pytorch`'s DataLoaders
 to `Nvidia-dali`: data loading (nvidia never failed to amaze me) and `Kornia` augmentation on device a tresure I found
 
-
 #### concurrent computation of losses and penalties (when possible :'))
 *(experiemnts with cuda streams wheren't robust (depending on torch.compile) thus only used in optimization experiementations :'( )*
+
+
+
+<br>
+<p align="center">
+  <img src="images/rick_n_morty.jpg" width="640"><br>
+  <em>admire the stars morty (none atm)</em>
+</p>
